@@ -29,7 +29,11 @@ bağlantı verebilir veya yer imine ekleyebilirsin.
 - **Kapak görselleri** — YouTube bağlantısı yapıştırdıysan videonun kapağı, yoksa başlıktan
   üretilen sabit renkli bir kapak gösterilir.
 - **Kütüphanem** — izlediklerini işaretle; site "bunları izledin, bir de şunlara bak" diyerek
-  benzerlerini önersin. Ayrıca izleme listen ve kaydettiğin öneriler de burada.
+  benzerlerini önersin. Ayrıca izleme listen, kaydettiğin öneriler ve
+  **geçmiş öneriler** de burada.
+- **Geçmiş öneriler** — sana yapılan tüm öneriler (Sana Özel, Hızlı Seçim, Kısa Test,
+  Kategoriler, benzer öneriler ve LLM) kütüphanede **kategorilere ayrılmış** olarak birikir.
+  Her kart hangi bölümden ve ne zaman geldiğini, tekrar önerildiyse kaç kez çıktığını gösterir.
 - **İpuçları** — YouTube'u sakinleştirmek için bir kez yapıp unutacağın ayarlar.
 - **Ayarlar (LLM)** — istersen bir yapay zekâ servisi (Anthropic / OpenAI / Google Gemini)
   tanımlayıp önerileri modelden de alabilirsin. Anahtar tanımlı değilken site tamamen
@@ -198,6 +202,7 @@ assets/js/shows.js         dizi & film kataloğu ve sabitleri
 assets/js/customShows.js   kullanıcının formdan eklediği yapımlar (localStorage)
 assets/js/memory.js        seçim/izleme geçmişinin ham kaydı (hafıza)
 assets/js/personalize.js   hafızadan zevk profili ve dinamik öneriler
+assets/js/recHistory.js    geçmiş önerilerin kaydı ve kategorilere ayrılması
 assets/js/llmSettings.js   LLM servis seçimi ve API anahtarı saklama
 assets/js/llm.js           sağlayıcıdan bağımsız LLM istemcisi (Anthropic/OpenAI/Gemini)
 assets/js/ytSuggest.js     YouTube arama önerileri (JSONP, anahtarsız)

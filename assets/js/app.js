@@ -25,6 +25,9 @@ import {
   PROVIDERS, getProvider, getLlmConfig, saveLlmConfig, clearApiKey, isLlmReady, maskKey,
 } from "./llmSettings.js";
 import { generateLlmSuggestions, testConnection } from "./llm.js";
+import {
+  recordRecommendations, groupedHistory, clearHistory, SOURCE_LABELS,
+} from "./recHistory.js";
 import { buildSearchUrl } from "./youtube.js";
 import {
   isSaved,
@@ -129,7 +132,7 @@ function renderCard(item) {
   ]);
 }
 
-function renderResults(container, items) {
+function renderResults(container, items, source = null) {
   container.innerHTML = "";
   if (items.length === 0) {
     container.appendChild(el("p", { class: "muted", text: "Bu filtrelerle eşleşen öneri bulunamadı. Farklı bir seçim dene." }));
@@ -137,6 +140,9 @@ function renderResults(container, items) {
   }
   items.forEach((item) => container.appendChild(renderCard(item)));
   pushRecentIds(items.map((i) => i.id));
+  if (source) {
+    recordRecommendations(items.map((i) => ({ kind: "item", id: i.id })), source);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -351,11 +357,19 @@ function renderForYou() {
     const retry = personalizedPicks({ limit: 6, exclude: foryouShown });
     retry.picks.forEach((pick) => addForYouCard(container, pick));
     retry.picks.forEach((pick) => foryouShown.add(pick.data.id));
+    recordRecommendations(
+      retry.picks.map((pick) => ({ kind: pick.kind, id: pick.data.id })),
+      "foryou"
+    );
   } else {
     picks.forEach((pick) => {
       addForYouCard(container, pick);
       foryouShown.add(pick.data.id);
     });
+    recordRecommendations(
+      picks.map((pick) => ({ kind: pick.kind, id: pick.data.id })),
+      "foryou"
+    );
   }
 
   if (isStarter) {
@@ -425,6 +439,15 @@ async function renderForYouWithLlm() {
       container.appendChild(el("p", { class: "muted", text: "Model bu sefer öneri üretemedi. Tekrar dene." }));
     } else {
       suggestions.forEach((suggestion) => container.appendChild(renderLlmCard(suggestion)));
+      // LLM önerileri katalogda olmadığı için içeriği geçmişe birlikte yazılır.
+      recordRecommendations(
+        suggestions.map((suggestion) => ({
+          kind: "llm",
+          id: suggestion.query.toLowerCase().replace(/\s+/g, "-").slice(0, 60),
+          payload: suggestion,
+        })),
+        "llm"
+      );
     }
   } catch (error) {
     // LLM başarısız olursa kullanıcı boşta kalmasın: yerel motorla devam.
@@ -459,6 +482,13 @@ function initForYouTab() {
 
   document.getElementById("foryouGenerate").addEventListener("click", renderForYou);
   document.getElementById("foryouLlm").addEventListener("click", renderForYouWithLlm);
+
+  document.getElementById("historyClear").addEventListener("click", () => {
+    if (!window.confirm("Geçmiş öneriler silinsin mi? Kaydettiklerin ve izlediklerin kalır.")) return;
+    clearHistory();
+    renderHistorySection();
+    updateLibraryCount();
+  });
 
   document.getElementById("memoryReset").addEventListener("click", () => {
     if (!window.confirm("Hafıza sıfırlansın mı? Seçim geçmişin silinir; kaydettiklerin ve izledikleri listesi kalır.")) return;
@@ -532,7 +562,7 @@ function initQuickTab() {
       duration: state.intentDuration,
     };
     const results = recommend(profile);
-    renderResults(document.getElementById("quickResults"), results);
+    renderResults(document.getElementById("quickResults"), results, "quick");
   });
 }
 
@@ -614,7 +644,7 @@ function finishQuiz() {
 
   const profile = answersToProfile(state.quiz.answers);
   const results = recommend(profile);
-  renderResults(document.getElementById("quizResults"), results);
+  renderResults(document.getElementById("quizResults"), results, "quiz");
 }
 
 function resetQuiz() {
@@ -686,7 +716,7 @@ function initCategoriesTab() {
       return;
     }
     const items = listByCategory(selectedCategory, { duration: state.intentDuration });
-    renderResults(container, items);
+    renderResults(container, items, "category");
   }
 
   render();
@@ -1102,6 +1132,10 @@ function renderSimilarSection() {
   section.hidden = suggestions.length === 0;
   container.innerHTML = "";
   suggestions.forEach(({ show, reason }) => container.appendChild(renderShowCard(show, reason)));
+  recordRecommendations(
+    suggestions.map(({ show }) => ({ kind: "show", id: show.id })),
+    "similar"
+  );
 }
 
 function renderWatchlistSection() {
@@ -1110,6 +1144,70 @@ function renderWatchlistSection() {
   document.getElementById("watchlistEmpty").hidden = shows.length > 0;
   container.innerHTML = "";
   shows.forEach((show) => container.appendChild(renderShowCard(show)));
+}
+
+function formatHistoryDate(iso) {
+  const date = new Date(iso);
+  const today = new Date();
+  const sameDay = date.toDateString() === today.toDateString();
+  if (sameDay) {
+    return `bugün ${date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`;
+  }
+  return date.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+}
+
+/** Geçmiş kaydını, türüne uygun kart olarak çizer ve altına kaynak/tarih satırı ekler. */
+function renderHistoryCard(entry) {
+  const { resolved } = entry;
+  let card;
+
+  if (entry.kind === "llm") {
+    card = renderLlmCard(resolved);
+  } else if (entry.kind === "item") {
+    card = renderCard(resolved.item);
+  } else {
+    card = renderShowCard(resolved.show);
+  }
+
+  const bits = [SOURCE_LABELS[entry.source] ?? entry.source, formatHistoryDate(entry.at)];
+  if ((entry.count ?? 1) > 1) bits.push(`${entry.count} kez önerildi`);
+  card.appendChild(el("p", { class: "history-meta muted", text: bits.join(" · ") }));
+
+  return card;
+}
+
+function renderHistorySection() {
+  const groups = groupedHistory();
+  const container = document.getElementById("historyGroups");
+  const emptyMsg = document.getElementById("historyEmpty");
+  const summary = document.getElementById("historySummary");
+  const clearBtn = document.getElementById("historyClear");
+
+  container.innerHTML = "";
+  const total = groups.reduce((sum, group) => sum + group.entries.length, 0);
+
+  emptyMsg.hidden = total > 0;
+  clearBtn.hidden = total === 0;
+  summary.textContent =
+    total > 0 ? `${total} öneri, ${groups.length} kategoride toplandı.` : "";
+
+  groups.forEach((group, index) => {
+    const details = el("details", { class: "history-group" });
+    // En kalabalık kategori açık gelsin, kalanlar kapalı dursun.
+    if (index === 0) details.open = true;
+
+    details.appendChild(
+      el("summary", {}, [
+        el("span", { class: "history-group-title", text: `${group.emoji} ${group.label}` }),
+        el("span", { class: "badge badge-soft", text: String(group.entries.length) }),
+      ])
+    );
+
+    const grid = el("div", { class: "results-grid" });
+    group.entries.forEach((entry) => grid.appendChild(renderHistoryCard(entry)));
+    details.appendChild(grid);
+    container.appendChild(details);
+  });
 }
 
 function renderSavedSuggestionsSection() {
@@ -1124,6 +1222,7 @@ function renderLibraryTab() {
   renderWatchedSection();
   renderSimilarSection();
   renderWatchlistSection();
+  renderHistorySection();
   renderSavedSuggestionsSection();
 }
 

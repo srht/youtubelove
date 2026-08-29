@@ -306,6 +306,20 @@
       <div id="watchlistResults" class="results-grid" aria-live="polite"></div>
     </section>
 
+    <section class="library-section" aria-labelledby="historyHeading">
+      <div class="section-head">
+        <h2 id="historyHeading">🕘 Geçmiş öneriler</h2>
+        <button type="button" id="historyClear" class="btn btn-ghost btn-small" hidden>Geçmişi temizle</button>
+      </div>
+      <p id="historyEmpty" class="muted">
+        Sana yapılan öneriler burada kategorilere ayrılmış olarak birikir.
+        <strong>Sana Özel</strong>, <strong>Hızlı Seçim</strong> veya <strong>Kısa Test</strong>
+        bölümlerinden bir öneri aldığında burada görünmeye başlar.
+      </p>
+      <p id="historySummary" class="muted"></p>
+      <div id="historyGroups"></div>
+    </section>
+
     <section class="library-section" aria-labelledby="savedHeading">
       <h2 id="savedHeading">💚 Kaydettiğim öneriler</h2>
       <p id="savedEmpty" class="muted">Henüz kaydedilen bir öneri yok. Önerilerdeki 🤍 ikonuna tıklayarak buraya ekleyebilirsin.</p>

@@ -775,6 +775,41 @@ h2, h3 {
   background: var(--accent);
 }
 
+/* ---- Geçmiş öneriler ---- */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.history-group {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+.history-group > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.history-group-title {
+  flex: 1;
+}
+.history-group[open] > summary {
+  margin-bottom: 14px;
+}
+.history-meta {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
 /* ---- Ayarlar / LLM ---- */
 .warning-box {
   padding: 14px 18px;
