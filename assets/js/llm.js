@@ -9,7 +9,9 @@
 
 import { getLlmConfig, getProvider } from "./llmSettings.js";
 
-const TIMEOUT_MS = 30_000;
+const TEST_TIMEOUT_MS = 30_000;
+// Öneri üretimi daha uzun sürebilir (bazı modellerde düşünme adımı açıktır).
+const GENERATE_TIMEOUT_MS = 60_000;
 
 const ADAPTERS = {
   anthropic: {
@@ -40,6 +42,10 @@ const ADAPTERS = {
     extractError(data) {
       return data?.error?.message ?? null;
     },
+    // Yanıt token sınırına takıldıysa JSON yarıda kesilmiş olur.
+    isTruncated(data) {
+      return data?.stop_reason === "max_tokens";
+    },
   },
 
   openai: {
@@ -66,6 +72,9 @@ const ADAPTERS = {
     extractError(data) {
       return data?.error?.message ?? null;
     },
+    isTruncated(data) {
+      return data?.choices?.[0]?.finish_reason === "length";
+    },
   },
 
   gemini: {
@@ -89,6 +98,9 @@ const ADAPTERS = {
     extractError(data) {
       return data?.error?.message ?? null;
     },
+    isTruncated(data) {
+      return data?.candidates?.[0]?.finishReason === "MAX_TOKENS";
+    },
   },
 };
 
@@ -97,9 +109,10 @@ async function callProvider(config, payload) {
   const adapter = ADAPTERS[config.provider];
   if (!adapter) throw new Error(`Bilinmeyen sağlayıcı: ${config.provider}`);
 
+  const timeoutMs = payload.timeoutMs ?? TEST_TIMEOUT_MS;
   const { url, headers, body } = adapter.buildRequest(config, payload);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   let response;
   try {
@@ -112,7 +125,7 @@ async function callProvider(config, payload) {
   } catch (error) {
     clearTimeout(timer);
     if (error.name === "AbortError") {
-      throw new Error("İstek zaman aşımına uğradı (30 sn).");
+      throw new Error(`İstek zaman aşımına uğradı (${Math.round(timeoutMs / 1000)} sn).`);
     }
     // Tarayıcı CORS hatalarını da buraya düşürür; ayrımı kullanıcıya açıklayalım.
     throw new Error(
@@ -143,45 +156,158 @@ async function callProvider(config, payload) {
   }
 
   const text = adapter.extractText(data);
-  if (!text) throw new Error("Sağlayıcı boş yanıt döndürdü.");
-  return text;
+  if (!text) {
+    if (adapter.isTruncated?.(data)) {
+      throw new Error(
+        "Model, metin üretmeden token sınırına takıldı. Ayarlar'dan öneri sayısını " +
+          "azaltmayı ya da daha küçük/hızlı bir model denemeyi düşünebilirsin."
+      );
+    }
+    throw new Error("Sağlayıcı boş yanıt döndürdü.");
+  }
+  return { text, truncated: Boolean(adapter.isTruncated?.(data)) };
 }
 
 /** Ayarların çalışıp çalışmadığını doğrulayan küçük bir istek. */
 export async function testConnection(config = getLlmConfig()) {
-  const text = await callProvider(config, {
+  // Düşünme adımı açık olan modellerde 16 token'lık bütçe metin bırakmayabilir.
+  const { text } = await callProvider(config, {
     system: "Sadece istenen kelimeyi yaz, başka hiçbir şey ekleme.",
-    user: 'Yalnızca şu kelimeyi yaz: TAMAM',
-    maxTokens: 16,
+    user: "Yalnızca şu kelimeyi yaz: TAMAM",
+    maxTokens: 2000,
+    timeoutMs: TEST_TIMEOUT_MS,
   });
   return text.trim().slice(0, 40);
 }
 
+/** JSON.parse dener; dizi ya da bilinen bir sarmalayıcı anahtar döndürür. */
+function tryParseArray(text) {
+  try {
+    const value = JSON.parse(text);
+    if (Array.isArray(value)) return value;
+    for (const key of ["suggestions", "items", "oneriler", "öneriler", "results", "data"]) {
+      if (Array.isArray(value?.[key])) return value[key];
+    }
+  } catch {
+    /* çağıran sıradaki adayı dener */
+  }
+  return null;
+}
+
+/** ```json ... ``` bloğu varsa içeriğini alır (metnin herhangi bir yerinde olabilir). */
+function stripCodeFence(text) {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  return fenced ? fenced[1].trim() : text.trim();
+}
+
 /**
- * Modelin döndürdüğü metinden JSON dizisini çıkarır.
- * Modeller sık sık ```json çitleri veya açıklama cümlesi ekler; bunları toleranslı ayıklarız.
+ * Metindeki dengeli [ ... ] bloklarını bulur.
+ * Dize içindeki köşeli parantezleri ve kaçış karakterlerini dikkate alır; böylece
+ * "why" metninde geçen bir parantez ayrıştırmayı bozmaz.
  */
-function parseJsonArray(text) {
-  const cleaned = text
-    .replace(/^\s*```(?:json)?/i, "")
-    .replace(/```\s*$/, "")
-    .trim();
-
-  const candidates = [cleaned];
-  const start = cleaned.indexOf("[");
-  const end = cleaned.lastIndexOf("]");
-  if (start !== -1 && end > start) candidates.push(cleaned.slice(start, end + 1));
-
-  for (const candidate of candidates) {
-    try {
-      const parsed = JSON.parse(candidate);
-      if (Array.isArray(parsed)) return parsed;
-      if (Array.isArray(parsed?.suggestions)) return parsed.suggestions;
-    } catch {
-      /* sıradaki adayı dene */
+function findBalancedArrays(text) {
+  const found = [];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "[") continue;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let j = i; j < text.length; j++) {
+      const ch = text[j];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (ch === "\\") escaped = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') inString = true;
+      else if (ch === "[") depth++;
+      else if (ch === "]") {
+        depth--;
+        if (depth === 0) {
+          found.push(text.slice(i, j + 1));
+          break;
+        }
+      }
     }
   }
-  throw new Error("Modelin yanıtı beklenen JSON biçiminde değil.");
+  return found;
+}
+
+/**
+ * Yanıt token sınırında kesildiyse dizi kapanmamış olur.
+ * Bu durumda tamamlanmış { ... } nesnelerini toplayıp kısmi sonuç kurtarırız.
+ */
+function salvageObjects(text) {
+  const start = text.indexOf("[");
+  if (start === -1) return null;
+
+  const objects = [];
+  let depth = 0;
+  let objectStart = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start + 1; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{") {
+      if (depth === 0) objectStart = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && objectStart !== -1) {
+        try {
+          objects.push(JSON.parse(text.slice(objectStart, i + 1)));
+        } catch {
+          /* bozuk nesneyi atla */
+        }
+        objectStart = -1;
+      }
+    }
+  }
+  return objects.length > 0 ? objects : null;
+}
+
+/**
+ * Modelin döndürdüğü metinden öneri dizisini çıkarır.
+ * Modeller sık sık kod çiti, giriş cümlesi ekler ya da yanıtı yarıda keser;
+ * hepsine karşı sırayla tolerans gösterilir.
+ */
+function parseJsonArray(text, { truncated = false } = {}) {
+  const unfenced = stripCodeFence(text);
+
+  // 1) Doğrudan ayrıştır
+  const direct = tryParseArray(unfenced);
+  if (direct) return direct;
+
+  // 2) Metin içindeki dengeli dizileri dene (en uzundan başlayarak)
+  const candidates = [...findBalancedArrays(unfenced), ...findBalancedArrays(text)]
+    .sort((a, b) => b.length - a.length);
+  for (const candidate of candidates) {
+    const parsed = tryParseArray(candidate);
+    if (parsed) return parsed;
+  }
+
+  // 3) Kesilmiş yanıt: tamamlanmış nesneleri kurtar
+  const salvaged = salvageObjects(unfenced) ?? salvageObjects(text);
+  if (salvaged) return salvaged;
+
+  // 4) Teşhis edilebilir bir hata ver
+  const preview = text.replace(/\s+/g, " ").trim().slice(0, 180);
+  if (truncated) {
+    throw new Error(
+      "Modelin yanıtı token sınırında kesilmiş. Ayarlar'dan öneri sayısını azaltmayı dene. " +
+        `Yanıtın başı: “${preview}”`
+    );
+  }
+  throw new Error(`Modelin yanıtı JSON olarak okunamadı. Yanıtın başı: “${preview}”`);
 }
 
 const SYSTEM_PROMPT = `Sen "YouTubeLove" adlı bir siteye öneri üreten yardımcısın.
@@ -225,13 +351,15 @@ export async function generateLlmSuggestions(profileText, options = {}) {
     .filter(Boolean)
     .join("\n");
 
-  const text = await callProvider(config, {
+  // Bazı modellerde düşünme adımı açıktır ve bu bütçeden yer kapar; bol pay bırakıyoruz.
+  const { text, truncated } = await callProvider(config, {
     system: SYSTEM_PROMPT,
     user: userPrompt,
-    maxTokens: 2000,
+    maxTokens: 8000,
+    timeoutMs: GENERATE_TIMEOUT_MS,
   });
 
-  return parseJsonArray(text)
+  return parseJsonArray(text, { truncated })
     .filter((item) => item && typeof item.title === "string" && typeof item.query === "string")
     .map((item) => ({
       title: String(item.title).slice(0, 120),

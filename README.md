@@ -69,6 +69,13 @@ YouTube'da aratılacak yeni öneriler üretir; her kart neden önerildiğini yaz
 - LLM çağrısı otomatik yapılmaz; yalnızca düğmeye bastığında çalışır (istekler ücretlidir).
 - Çağrı başarısız olursa hata gösterilir ve site kendi motoruyla ürettiği önerilere düşer.
 
+**Modelin yanıtı ayrıştırılırken** kod çiti (` ```json `), giriş/kapanış cümlesi,
+`{"suggestions": [...]}` gibi sarmalayıcılar ve yanıtın token sınırında yarıda kesilmesi
+gibi durumlara tolerans gösterilir; kesilmiş bir yanıttan tamamlanmış öneriler kurtarılır.
+Hiçbiri tutmazsa hata mesajı modelin yanıtının ilk satırını da gösterir, böylece sorunun
+nerede olduğu anlaşılır. Düşünme (thinking) adımı açık olan modeller token bütçesinin bir
+kısmını oraya harcadığı için istekler geniş bir bütçeyle (`max_tokens: 8000`) gönderilir.
+
 ### ⚠️ API anahtarı güvenliği
 
 Anahtar **yalnızca senin tarayıcında** (`localStorage`) saklanır; bu depoya, bize veya
