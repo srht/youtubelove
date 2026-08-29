@@ -1,9 +1,15 @@
 // Dizi/film filtreleme ve "izlediklerine benzer" öneri motoru.
 
 import { SHOWS, eraOf } from "./shows.js";
+import { getCustomShows } from "./customShows.js";
+
+/** Yerleşik katalog + kullanıcının formdan eklediği yapımlar. */
+export function allShows() {
+  return [...SHOWS, ...getCustomShows()];
+}
 
 export function getShowById(id) {
-  return SHOWS.find((s) => s.id === id) ?? null;
+  return allShows().find((s) => s.id === id) ?? null;
 }
 
 /**
@@ -12,15 +18,23 @@ export function getShowById(id) {
  *   mood?: string, intensity?: string}} filters
  */
 export function filterShows(filters = {}) {
-  return SHOWS.filter((show) => {
+  return allShows().filter((show) => {
     if (filters.type && show.type !== filters.type) return false;
     if (filters.origin && show.origin !== filters.origin) return false;
-    if (filters.era && eraOf(show.startYear) !== filters.era) return false;
+    if (filters.era) {
+      if (show.startYear == null) return false;
+      if (eraOf(show.startYear) !== filters.era) return false;
+    }
     if (filters.genre && !show.genres.includes(filters.genre)) return false;
     if (filters.mood && !show.moods.includes(filters.mood)) return false;
     if (filters.intensity && show.intensity !== filters.intensity) return false;
     return true;
-  }).sort((a, b) => a.startYear - b.startYear);
+  }).sort((a, b) => {
+    // Yılı belirtilmemiş (kullanıcı eklemesi) yapımlar listenin sonunda.
+    if (a.startYear == null) return b.startYear == null ? 0 : 1;
+    if (b.startYear == null) return -1;
+    return a.startYear - b.startYear;
+  });
 }
 
 const SIMILARITY_WEIGHTS = {
@@ -49,7 +63,7 @@ export function similarToWatched(watchedIds, options = {}) {
 
   const scored = [];
 
-  for (const candidate of SHOWS) {
+  for (const candidate of allShows()) {
     if (watchedIds.includes(candidate.id)) continue;
 
     let total = 0;
@@ -68,7 +82,10 @@ export function similarToWatched(watchedIds, options = {}) {
       const sharedMoods = candidate.moods.filter((m) => seen.moods.includes(m)).length;
       pair += sharedMoods * SIMILARITY_WEIGHTS.mood;
 
-      if (eraOf(candidate.startYear) === eraOf(seen.startYear)) pair += SIMILARITY_WEIGHTS.era;
+      if (
+        candidate.startYear != null && seen.startYear != null &&
+        eraOf(candidate.startYear) === eraOf(seen.startYear)
+      ) pair += SIMILARITY_WEIGHTS.era;
       if (candidate.origin === seen.origin) pair += SIMILARITY_WEIGHTS.origin;
       if (candidate.type === seen.type) pair += SIMILARITY_WEIGHTS.type;
 

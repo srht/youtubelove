@@ -15,6 +15,11 @@ kendi tarayıcında (`localStorage`) tutulur.
 - **Dizi & Film** — aklına gelmeyen eski dizi ve filmleri hatırlatan 79 yapımlık katalog
   (Türk klasikleri + yabancı klasikler). Dönem, tür, ruh hali, yapım ve yoğunluğa göre filtrele,
   ya da "🎲 Rastgele öner" ile karar vermeyi siteye bırak.
+- **Kendi yapımını ekle** — koda dokunmadan, formdan dizi/film ekle. Başlık alanına yazmaya
+  başladığında YouTube'un arama önerileri açılır. Eklediğin yapımlar katalogla birlikte
+  filtrelenir ve önerilere dahil olur.
+- **Kapak görselleri** — YouTube bağlantısı yapıştırdıysan videonun kapağı, yoksa başlıktan
+  üretilen sabit renkli bir kapak gösterilir.
 - **Kütüphanem** — izlediklerini işaretle; site "bunları izledin, bir de şunlara bak" diyerek
   benzerlerini önersin. Ayrıca izleme listen ve kaydettiğin öneriler de burada.
 - **Niyet kartı ve zamanlayıcı** — YouTube'a girmeden önce ne kadar vakit ayıracağını seç,
@@ -73,6 +78,27 @@ kullan.
 
 ## Yeni dizi/film ekleme
 
+**Çoğu durumda koda dokunmana gerek yok:** sitede **Dizi & Film** sekmesindeki
+*"➕ Kendi dizini / filmini ekle"* formunu kullan. Eklediklerin tarayıcında saklanır
+(`localStorage`), katalogla birlikte filtrelenir ve öneri motoruna dahil olur. Kartlarında
+"senin eklediğin" etiketi ve bir 🗑️ silme düğmesi bulunur.
+
+> Not: Form ile eklenenler yalnızca **o tarayıcıda** görünür. Herkeste görünmesini istediğin
+> yapımları aşağıdaki gibi `shows.js` dosyasına eklemen gerekir.
+
+### YouTube başlık önerileri nasıl çalışıyor?
+
+Form, Google'ın herkese açık arama-önerisi ucunu (`suggestqueries.google.com`) JSONP ile
+çağırır — API anahtarı, backend veya kota gerekmez. Bu uç nokta resmî olarak belgelenmiş
+değildir; erişilemezse (ağ engeli veya biçim değişikliği) öneri listesi sessizce açılmaz ve
+form normal şekilde çalışmayı sürdürür. İlgili kod: `assets/js/ytSuggest.js`.
+
+Kapak görselleri için YouTube'un açık küçük resim adresi kullanılır
+(`i.ytimg.com/vi/<video-id>/hqdefault.jpg`), bu da anahtar gerektirmez. Video kimliği
+yoksa `assets/js/thumb.js` başlıktan sabit renkli bir kapak üretir.
+
+### Kalıcı olarak koda eklemek
+
 Dizi ve filmler `assets/js/shows.js` içindeki `SHOWS` dizisinde tutulur:
 
 ```js
@@ -104,6 +130,9 @@ index.html                 tek sayfa, sekmeli arayüz
 assets/css/styles.css      tema ve bileşen stilleri
 assets/js/data.js          öneri kütüphanesi ve sabitler
 assets/js/shows.js         dizi & film kataloğu ve sabitleri
+assets/js/customShows.js   kullanıcının formdan eklediği yapımlar (localStorage)
+assets/js/ytSuggest.js     YouTube arama önerileri (JSONP, anahtarsız)
+assets/js/thumb.js         kart kapak görselleri (YouTube küçük resmi / üretilmiş kapak)
 assets/js/youtube.js       YouTube arama URL'i üretimi
 assets/js/recommend.js     öneri eşleştirme/skorlama motoru
 assets/js/showRecommend.js dizi/film filtreleme ve benzerlik motoru

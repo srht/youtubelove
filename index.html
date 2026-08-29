@@ -105,6 +105,81 @@
       izlediklerini işaretledikçe kütüphanen benzerlerini önermeye başlar.
     </p>
 
+    <details class="add-form-wrap" id="addShowDetails">
+      <summary>➕ Kendi dizini / filmini ekle</summary>
+
+      <form id="addShowForm" class="add-form" novalidate>
+        <div class="form-row">
+          <label class="field field-grow" for="fTitle">
+            <span class="field-label">Başlık *</span>
+            <input type="text" id="fTitle" name="title" autocomplete="off" required
+                   placeholder="Örn. Sopranos" aria-describedby="fTitleHelp"
+                   role="combobox" aria-expanded="false" aria-controls="titleSuggestions" aria-autocomplete="list" />
+            <ul id="titleSuggestions" class="suggest-list" role="listbox" aria-label="YouTube arama önerileri" hidden></ul>
+            <small id="fTitleHelp" class="field-help">Yazmaya başla, YouTube'un arama önerileri açılsın.</small>
+          </label>
+
+          <label class="field field-year" for="fYear">
+            <span class="field-label">Yıl</span>
+            <input type="number" id="fYear" name="year" min="1900" max="2100" placeholder="1999" />
+          </label>
+        </div>
+
+        <label class="field" for="fVideo">
+          <span class="field-label">YouTube bağlantısı veya video kimliği</span>
+          <input type="text" id="fVideo" name="videoId" autocomplete="off"
+                 placeholder="https://www.youtube.com/watch?v=..." aria-describedby="fVideoHelp" />
+          <small id="fVideoHelp" class="field-help">Kapak görseli için kullanılır. Boş bırakırsan otomatik bir kapak üretilir.</small>
+        </label>
+
+        <div class="form-row">
+          <label class="field" for="fType">
+            <span class="field-label">Biçim</span>
+            <select id="fType" name="type">
+              <option value="dizi">Dizi</option>
+              <option value="film">Film</option>
+            </select>
+          </label>
+          <label class="field" for="fOrigin">
+            <span class="field-label">Yapım</span>
+            <select id="fOrigin" name="origin">
+              <option value="turk">Türk yapımı</option>
+              <option value="yabanci">Yabancı yapım</option>
+            </select>
+          </label>
+          <label class="field" for="fIntensity">
+            <span class="field-label">Yoğunluk</span>
+            <select id="fIntensity" name="intensity">
+              <option value="hafif">Hafif — rahatlatır</option>
+              <option value="orta" selected>Orta — dengeli</option>
+              <option value="agir">Ağır — yorabilir</option>
+            </select>
+          </label>
+        </div>
+
+        <fieldset class="field">
+          <legend class="field-label">Türler</legend>
+          <div class="chip-group chip-group-sm" id="fGenreChips"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="field-label">Nasıl hissettiriyor?</legend>
+          <div class="chip-group chip-group-sm" id="fMoodChips"></div>
+        </fieldset>
+
+        <label class="field" for="fDescription">
+          <span class="field-label">Kısa açıklama</span>
+          <textarea id="fDescription" name="description" rows="2" placeholder="Ne anlatıyor?"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Listeme ekle</button>
+          <button type="reset" class="btn btn-ghost btn-small">Formu temizle</button>
+          <p id="formStatus" class="form-status" role="status"></p>
+        </div>
+      </form>
+    </details>
+
     <div class="picker">
       <div class="picker-group">
         <h3>Dönem</h3>

@@ -16,6 +16,9 @@ import {
   watchedStats,
   getShowById,
 } from "./showRecommend.js";
+import { addCustomShow, removeCustomShow, isCustomShow } from "./customShows.js";
+import { fetchSuggestions, debounce } from "./ytSuggest.js";
+import { createThumb } from "./thumb.js";
 import { buildSearchUrl } from "./youtube.js";
 import {
   isSaved,
@@ -535,8 +538,42 @@ function renderShowCard(show, note = null) {
     el("span", { class: `tag intensity-${show.intensity}`, text: INTENSITY_LABEL[show.intensity] }),
   ];
 
+  if (isCustomShow(show.id)) {
+    tags.unshift(el("span", { class: "tag tag-custom", text: "senin eklediğin" }));
+  }
+
+  const actions = [
+    el("a", {
+      class: "watch-link",
+      href: url,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      text: "YouTube'da Ara ↗",
+    }),
+    watchedBtn,
+  ];
+
+  if (isCustomShow(show.id)) {
+    actions.push(
+      el("button", {
+        class: "btn btn-ghost btn-small delete-btn",
+        type: "button",
+        "aria-label": `${show.title} kaydını listemden sil`,
+        text: "🗑️",
+        onclick: () => {
+          if (!window.confirm(`"${show.title}" listenden silinsin mi?`)) return;
+          removeCustomShow(show.id);
+          updateLibraryCount();
+          refreshShowResults();
+          if (!document.getElementById("panel-library").hidden) renderLibraryTab();
+        },
+      })
+    );
+  }
+
   return el("article", { class: `card show-card${watched ? " is-watched" : ""}` }, [
     note ? el("p", { class: "reason-note", text: `✨ ${note}` }) : null,
+    createThumb(show),
     el("div", { class: "card-top" }, [
       el("h4", { text: show.title }),
       saveShowBtn,
@@ -544,16 +581,7 @@ function renderShowCard(show, note = null) {
     el("p", { text: show.description }),
     el("p", { class: "why", text: show.why }),
     el("div", { class: "card-tags" }, tags),
-    el("div", { class: "card-actions" }, [
-      el("a", {
-        class: "watch-link",
-        href: url,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        text: "YouTube'da Ara ↗",
-      }),
-      watchedBtn,
-    ]),
+    el("div", { class: "card-actions" }, actions),
   ]);
 }
 
@@ -604,8 +632,195 @@ function refreshShowResults(customList = null) {
   results.forEach((show) => container.appendChild(renderShowCard(show)));
 }
 
+// ---------------------------------------------------------------------------
+// "Kendi dizini ekle" formu
+// ---------------------------------------------------------------------------
+
+const formSelection = { genres: [], moods: [] };
+
+function renderFormChips(containerId, options, key) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  options.forEach((opt) => {
+    const selected = formSelection[key].includes(opt.id);
+    container.appendChild(
+      el("button", {
+        class: "chip",
+        type: "button",
+        "aria-pressed": String(selected),
+        text: opt.emoji ? `${opt.emoji} ${opt.label}` : opt.label,
+        onclick: () => {
+          const list = formSelection[key];
+          const idx = list.indexOf(opt.id);
+          if (idx === -1) list.push(opt.id);
+          else list.splice(idx, 1);
+          renderFormChips(containerId, options, key);
+        },
+      })
+    );
+  });
+}
+
+function setFormStatus(message, kind = "info") {
+  const status = document.getElementById("formStatus");
+  status.textContent = message;
+  status.className = `form-status form-status-${kind}`;
+}
+
+/** Başlık alanı için YouTube arama önerisi açılır listesi. */
+function initTitleSuggestions() {
+  const input = document.getElementById("fTitle");
+  const list = document.getElementById("titleSuggestions");
+  let activeIndex = -1;
+
+  function closeList() {
+    list.hidden = true;
+    list.innerHTML = "";
+    activeIndex = -1;
+    input.setAttribute("aria-expanded", "false");
+  }
+
+  function choose(text) {
+    input.value = text;
+    closeList();
+    input.focus();
+  }
+
+  function renderList(suggestions) {
+    if (suggestions.length === 0) {
+      closeList();
+      return;
+    }
+    list.innerHTML = "";
+    suggestions.forEach((text, index) => {
+      list.appendChild(
+        el("li", {
+          class: "suggest-item",
+          role: "option",
+          id: `suggest-${index}`,
+          "aria-selected": "false",
+          text,
+          onmousedown: (event) => {
+            // mousedown: blur'dan önce çalışsın ki liste kapanmadan seçim yapılsın
+            event.preventDefault();
+            choose(text);
+          },
+        })
+      );
+    });
+    activeIndex = -1;
+    list.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+  }
+
+  function highlight(nextIndex) {
+    const items = [...list.querySelectorAll(".suggest-item")];
+    if (items.length === 0) return;
+    activeIndex = (nextIndex + items.length) % items.length;
+    items.forEach((item, i) => {
+      const on = i === activeIndex;
+      item.classList.toggle("is-active", on);
+      item.setAttribute("aria-selected", String(on));
+    });
+  }
+
+  const runSearch = debounce(async (value) => {
+    const suggestions = await fetchSuggestions(value);
+    // Kullanıcı arada yazmayı sürdürdüyse eski sonucu gösterme.
+    if (input.value.trim() !== value) return;
+    renderList(suggestions);
+  }, 250);
+
+  input.addEventListener("input", () => {
+    const value = input.value.trim();
+    if (value.length < 2) {
+      closeList();
+      return;
+    }
+    runSearch(value);
+  });
+
+  input.addEventListener("keydown", (event) => {
+    if (list.hidden) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      highlight(activeIndex + 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      highlight(activeIndex - 1);
+    } else if (event.key === "Enter" && activeIndex >= 0) {
+      event.preventDefault();
+      choose([...list.querySelectorAll(".suggest-item")][activeIndex].textContent);
+    } else if (event.key === "Escape") {
+      closeList();
+    }
+  });
+
+  input.addEventListener("blur", () => setTimeout(closeList, 120));
+}
+
+function initAddShowForm() {
+  renderFormChips("fGenreChips", SHOW_GENRES, "genres");
+  renderFormChips("fMoodChips", SHOW_MOODS, "moods");
+  initTitleSuggestions();
+
+  const form = document.getElementById("addShowForm");
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(form);
+    const title = String(data.get("title") ?? "").trim();
+
+    if (!title) {
+      setFormStatus("Başlık gerekli.", "error");
+      document.getElementById("fTitle").focus();
+      return;
+    }
+
+    const result = addCustomShow({
+      title,
+      year: data.get("year"),
+      videoId: data.get("videoId"),
+      type: data.get("type"),
+      origin: data.get("origin"),
+      intensity: data.get("intensity"),
+      description: data.get("description"),
+      genres: [...formSelection.genres],
+      moods: [...formSelection.moods],
+    });
+
+    if (!result.ok) {
+      setFormStatus(result.error, "error");
+      return;
+    }
+
+    form.reset();
+    formSelection.genres = [];
+    formSelection.moods = [];
+    renderFormChips("fGenreChips", SHOW_GENRES, "genres");
+    renderFormChips("fMoodChips", SHOW_MOODS, "moods");
+
+    setFormStatus(`"${result.show.title}" listene eklendi ✅`, "success");
+    Object.keys(showFilters).forEach((k) => {
+      showFilters[k] = null;
+    });
+    renderAllShowChips();
+    refreshShowResults();
+    updateLibraryCount();
+  });
+
+  form.addEventListener("reset", () => {
+    formSelection.genres = [];
+    formSelection.moods = [];
+    renderFormChips("fGenreChips", SHOW_GENRES, "genres");
+    renderFormChips("fMoodChips", SHOW_MOODS, "moods");
+    setFormStatus("");
+  });
+}
+
 function initShowsTab() {
   renderAllShowChips();
+  initAddShowForm();
   refreshShowResults();
 
   document.getElementById("showClearFilters").addEventListener("click", () => {

@@ -487,6 +487,177 @@ h2, h3 {
   color: #fff;
 }
 
+/* ---- Kart kapak görseli ---- */
+.card-thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.card-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.thumb-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #fff;
+}
+.thumb-initials {
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.thumb-kind {
+  font-size: 1.4rem;
+  opacity: 0.85;
+}
+.tag-custom {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-weight: 600;
+}
+.delete-btn {
+  font-size: 1rem;
+  padding: 6px 10px;
+}
+
+/* ---- Ekleme formu ---- */
+.add-form-wrap {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow);
+}
+.add-form-wrap > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+.form-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  position: relative;
+}
+.field-grow {
+  flex: 1 1 260px;
+}
+.field-year {
+  flex: 0 0 120px;
+}
+.form-row > .field {
+  flex: 1 1 160px;
+}
+.field-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  padding: 0;
+}
+.field-help {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.add-form input,
+.add-form select,
+.add-form textarea {
+  font: inherit;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+.add-form textarea {
+  resize: vertical;
+}
+.add-form input:focus-visible,
+.add-form select:focus-visible,
+.add-form textarea:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--primary);
+}
+.chip-group-sm .chip {
+  padding: 5px 11px;
+  font-size: 0.85rem;
+}
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.form-status {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.form-status-error {
+  color: var(--danger);
+}
+.form-status-success {
+  color: var(--primary);
+}
+
+/* ---- Başlık önerileri (otomatik tamamlama) ---- */
+.suggest-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(20, 40, 28, 0.16);
+  max-height: 260px;
+  overflow-y: auto;
+}
+.suggest-item {
+  padding: 8px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.92rem;
+}
+.suggest-item:hover,
+.suggest-item.is-active {
+  background: var(--accent);
+}
+
 /* ---- Kütüphanem ---- */
 .library-section {
   margin-bottom: 34px;
