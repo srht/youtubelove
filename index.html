@@ -30,7 +30,10 @@
     </div>
 
     <nav class="menu" role="tablist" aria-orientation="vertical" aria-label="Bölümler">
-      <button type="button" class="menu-item" id="tab-quick" role="tab" aria-selected="true" aria-controls="panel-quick">
+      <button type="button" class="menu-item" id="tab-foryou" role="tab" aria-selected="true" aria-controls="panel-foryou">
+        <span class="menu-icon" aria-hidden="true">✨</span><span class="menu-label">Sana Özel</span>
+      </button>
+      <button type="button" class="menu-item" id="tab-quick" role="tab" aria-selected="false" aria-controls="panel-quick" tabindex="-1">
         <span class="menu-icon" aria-hidden="true">⚡</span><span class="menu-label">Hızlı Seçim</span>
       </button>
       <button type="button" class="menu-item" id="tab-quiz" role="tab" aria-selected="false" aria-controls="panel-quiz" tabindex="-1">
@@ -68,12 +71,29 @@
 
   <main id="main" class="content">
 
-  <section class="daily-pick" id="dailyPick" aria-label="Bugünün önerisi">
-    <!-- app.js tarafından doldurulur -->
+  <!-- ---- Sana Özel ---- -->
+  <section id="panel-foryou" class="tab-panel" role="tabpanel" aria-labelledby="tab-foryou">
+    <div class="panel-head">
+      <h2>✨ Sana Özel</h2>
+      <p class="muted">Seçimlerinden ve izlediklerinden öğrenip her seferinde yeniden derliyorum.</p>
+    </div>
+
+    <div class="foryou-bar">
+      <div class="foryou-info">
+        <p id="memorySummary" class="memory-summary"></p>
+        <p id="memoryMeta" class="muted memory-meta"></p>
+      </div>
+      <div class="foryou-actions">
+        <button type="button" id="foryouGenerate" class="btn btn-primary btn-large">Önerileri göster</button>
+        <button type="button" id="memoryReset" class="btn btn-ghost btn-small">Hafızayı sıfırla</button>
+      </div>
+    </div>
+
+    <div id="foryouResults" class="results-grid" aria-live="polite"></div>
   </section>
 
   <!-- ---- Hızlı Seçim ---- -->
-  <section id="panel-quick" class="tab-panel" role="tabpanel" aria-labelledby="tab-quick">
+  <section id="panel-quick" class="tab-panel" role="tabpanel" aria-labelledby="tab-quick" hidden>
     <div class="panel-head">
       <h2>⚡ Hızlı Seçim</h2>
       <p class="muted">Nasıl hissettiğini ve ne istediğini seç; sana uygun aramaları getireyim.</p>

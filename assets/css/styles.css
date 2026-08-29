@@ -133,34 +133,42 @@ h2, h3 {
   font-size: 0.85rem;
 }
 
-/* ---- Daily pick ---- */
-.daily-pick {
-  margin: 20px 0;
-}
-.daily-pick-card {
-  background: linear-gradient(135deg, var(--accent), var(--bg-elevated));
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px 20px;
+/* ---- Sana Özel ---- */
+.foryou-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 18px 20px;
+  margin-bottom: 22px;
+  background: linear-gradient(135deg, var(--accent), var(--bg-elevated));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.foryou-info {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.memory-summary {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.memory-meta {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+}
+.foryou-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
 }
-.daily-pick-card .label {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  margin: 0 0 4px;
-}
-.daily-pick-card h3 {
-  margin: 0 0 4px;
-}
-.daily-pick-card p {
+.foryou-hint {
+  grid-column: 1 / -1;
   margin: 0;
-  color: var(--text-muted);
+  font-size: 0.88rem;
 }
 
 /* ---- Üst çubuk (yalnızca mobil) ---- */

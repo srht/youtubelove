@@ -1,6 +1,6 @@
 import { CATEGORIES, MOODS, GOALS, DURATIONS } from "./data.js";
 import { buildSearchUrlForItem } from "./youtube.js";
-import { recommend, listByCategory, getDailyPick, getItemById } from "./recommend.js";
+import { recommend, listByCategory, getItemById } from "./recommend.js";
 import { QUIZ_QUESTIONS, answersToProfile, summarizeProfile } from "./quiz.js";
 import {
   SHOW_ERAS,
@@ -19,6 +19,8 @@ import {
 import { addCustomShow, removeCustomShow, isCustomShow } from "./customShows.js";
 import { fetchSuggestions, debounce } from "./ytSuggest.js";
 import { createThumb } from "./thumb.js";
+import { recordEvent, clearMemory, getEvents } from "./memory.js";
+import { personalizedPicks, memorySummary } from "./personalize.js";
 import { buildSearchUrl } from "./youtube.js";
 import {
   isSaved,
@@ -87,6 +89,7 @@ function renderCard(item) {
     text: isSaved(item.id) ? "💚" : "🤍",
     onclick: () => {
       const nowSaved = toggleSaved(item.id);
+      if (nowSaved) recordEvent("suggestion_saved", { id: item.id });
       saveBtn.setAttribute("aria-pressed", String(nowSaved));
       saveBtn.textContent = nowSaved ? "💚" : "🤍";
       saveBtn.setAttribute("aria-label", nowSaved ? "Kaydedilenlerden çıkar" : "Kaydet");
@@ -100,7 +103,10 @@ function renderCard(item) {
     target: "_blank",
     rel: "noopener noreferrer",
     text: "YouTube'da Ara ↗",
-    onclick: () => pushRecentIds([item.id]),
+    onclick: () => {
+      pushRecentIds([item.id]);
+      recordEvent("suggestion_opened", { id: item.id });
+    },
   });
 
   return el("article", { class: "card" }, [
@@ -133,7 +139,7 @@ function renderResults(container, items) {
 // Sekmeler
 // ---------------------------------------------------------------------------
 
-const TAB_IDS = ["quick", "quiz", "categories", "shows", "library", "tips"];
+const TAB_IDS = ["foryou", "quick", "quiz", "categories", "shows", "library", "tips"];
 
 const MOBILE_QUERY = "(max-width: 899px)";
 
@@ -164,6 +170,7 @@ function switchTab(tabId, options = {}) {
   });
 
   if (tabId === "library") renderLibraryTab();
+  if (tabId === "foryou") renderMemoryStatus();
 
   if (options.updateHash !== false && window.location.hash !== `#${tabId}`) {
     // Bölümler paylaşılabilir/yer imlenebilir olsun diye adres çubuğuna yazılır.
@@ -219,7 +226,7 @@ function initTabs() {
 
   // Adresteki bölüme (varsa) aç
   const fromHash = window.location.hash.replace("#", "");
-  switchTab(TAB_IDS.includes(fromHash) ? fromHash : "quick", {
+  switchTab(TAB_IDS.includes(fromHash) ? fromHash : "foryou", {
     updateHash: false,
     scrollTop: false,
   });
@@ -299,32 +306,83 @@ function initTimer() {
 }
 
 // ---------------------------------------------------------------------------
-// Bugünün önerisi
+// Sana Özel: hafızaya dayalı dinamik öneriler
 // ---------------------------------------------------------------------------
 
-function renderDailyPick() {
-  const container = document.getElementById("dailyPick");
-  const item = getDailyPick();
-  const url = buildSearchUrlForItem(item, { duration: item.duration });
+/** Aynı düğmeye tekrar basınca yeni şeyler gelsin diye bu oturumda gösterilenler. */
+const foryouShown = new Set();
+
+function renderMemoryStatus() {
+  const summaryEl = document.getElementById("memorySummary");
+  const metaEl = document.getElementById("memoryMeta");
+  const summary = memorySummary();
+  const eventCount = getEvents().length;
+  const watchedCount = getWatchedIds().length;
+
+  if (summary) {
+    summaryEl.textContent = summary;
+    summaryEl.hidden = false;
+  } else {
+    summaryEl.textContent =
+      "Hafızam henüz boş. Seçim yaptıkça, kaydettikçe ve “izledim” dedikçe öneriler sana göre şekillenecek.";
+    summaryEl.hidden = false;
+  }
+
+  const bits = [];
+  if (eventCount > 0) bits.push(`${eventCount} hareket`);
+  if (watchedCount > 0) bits.push(`${watchedCount} izlenen yapım`);
+  metaEl.textContent = bits.length > 0 ? bits.join(" · ") : "";
+  document.getElementById("memoryReset").hidden = eventCount === 0 && watchedCount === 0;
+}
+
+function renderForYou() {
+  const container = document.getElementById("foryouResults");
+  const { picks, isStarter } = personalizedPicks({ limit: 6, exclude: foryouShown });
 
   container.innerHTML = "";
-  container.appendChild(
-    el("div", { class: "daily-pick-card" }, [
-      el("div", {}, [
-        el("p", { class: "label", text: "🌞 Bugünün önerisi" }),
-        el("h3", { text: item.title }),
-        el("p", { text: item.description }),
-      ]),
-      el("a", {
-        class: "watch-link",
-        href: url,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        text: "YouTube'da Ara ↗",
-        onclick: () => pushRecentIds([item.id]),
-      }),
-    ])
-  );
+
+  if (picks.length === 0) {
+    // Her şey gösterildi: listeyi sıfırlayıp baştan başla.
+    foryouShown.clear();
+    const retry = personalizedPicks({ limit: 6, exclude: foryouShown });
+    retry.picks.forEach((pick) => addForYouCard(container, pick));
+    retry.picks.forEach((pick) => foryouShown.add(pick.data.id));
+  } else {
+    picks.forEach((pick) => {
+      addForYouCard(container, pick);
+      foryouShown.add(pick.data.id);
+    });
+  }
+
+  if (isStarter) {
+    container.prepend(
+      el("p", {
+        class: "muted foryou-hint",
+        text: "Bunlar başlangıç önerileri. Birkaç seçim yaptıktan sonra liste tamamen sana göre değişecek.",
+      })
+    );
+  }
+  renderMemoryStatus();
+}
+
+function addForYouCard(container, pick) {
+  const card = pick.kind === "item" ? renderCard(pick.data) : renderShowCard(pick.data);
+  card.prepend(el("p", { class: "reason-note", text: `✨ ${pick.reason}` }));
+  container.appendChild(card);
+}
+
+function initForYouTab() {
+  renderMemoryStatus();
+
+  document.getElementById("foryouGenerate").addEventListener("click", renderForYou);
+
+  document.getElementById("memoryReset").addEventListener("click", () => {
+    if (!window.confirm("Hafıza sıfırlansın mı? Seçim geçmişin silinir; kaydettiklerin ve izledikleri listesi kalır.")) return;
+    clearMemory();
+    foryouShown.clear();
+    document.getElementById("foryouResults").innerHTML = "";
+    renderMemoryStatus();
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -381,6 +439,9 @@ function initQuickTab() {
   refreshSubmitState();
 
   submitBtn.addEventListener("click", () => {
+    if (state.quick.mood) recordEvent("mood_selected", { value: state.quick.mood });
+    if (state.quick.goal) recordEvent("goal_selected", { value: state.quick.goal });
+
     const profile = {
       moods: state.quick.mood ? [state.quick.mood] : [],
       goals: state.quick.goal ? [state.quick.goal] : [],
@@ -462,6 +523,9 @@ function finishQuiz() {
   resultWrap.hidden = false;
 
   saveQuizProfile(state.quiz.answers);
+  Object.entries(state.quiz.answers).forEach(([key, value]) => {
+    [].concat(value).forEach((v) => recordEvent("quiz_answer", { key, value: v }));
+  });
   document.getElementById("quizSummary").textContent = summarizeProfile(state.quiz.answers);
 
   const profile = answersToProfile(state.quiz.answers);
@@ -521,6 +585,7 @@ function initCategoriesTab() {
         text: `${cat.emoji} ${cat.label}`,
         onclick: () => {
           selectedCategory = selectedCategory === cat.id ? null : cat.id;
+          if (selectedCategory) recordEvent("category_browsed", { value: selectedCategory });
           render();
           renderCategoryResults();
         },
@@ -568,7 +633,8 @@ function renderShowCard(show, note = null) {
     "aria-pressed": String(watched),
     text: watched ? "✅ İzledim" : "＋ İzledim",
     onclick: () => {
-      toggleWatched(show.id);
+      const nowWatched = toggleWatched(show.id);
+      if (nowWatched) recordEvent("show_watched", { id: show.id });
       updateLibraryCount();
       refreshShowResults();
       if (!document.getElementById("panel-library").hidden) renderLibraryTab();
@@ -583,6 +649,7 @@ function renderShowCard(show, note = null) {
     text: savedShow ? "🔖" : "📑",
     onclick: () => {
       const nowSaved = toggleSavedShow(show.id);
+      if (nowSaved) recordEvent("show_saved", { id: show.id });
       saveShowBtn.setAttribute("aria-pressed", String(nowSaved));
       saveShowBtn.textContent = nowSaved ? "🔖" : "📑";
       saveShowBtn.setAttribute("aria-label", nowSaved ? "İzleme listesinden çıkar" : "İzleme listeme ekle");
@@ -609,6 +676,7 @@ function renderShowCard(show, note = null) {
       target: "_blank",
       rel: "noopener noreferrer",
       text: "YouTube'da Ara ↗",
+      onclick: () => recordEvent("show_opened", { id: show.id }),
     }),
     watchedBtn,
   ];
@@ -980,7 +1048,6 @@ function renderLibraryTab() {
 // ---------------------------------------------------------------------------
 
 function init() {
-  renderDailyPick();
   renderIntentDuration();
   initTimer();
   initTabs();
@@ -988,6 +1055,7 @@ function init() {
   initQuizTab();
   initCategoriesTab();
   initShowsTab();
+  initForYouTab();
   updateLibraryCount();
 
   const previousProfile = getQuizProfile();
