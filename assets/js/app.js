@@ -133,9 +133,27 @@ function renderResults(container, items) {
 // Sekmeler
 // ---------------------------------------------------------------------------
 
-const TAB_IDS = ["quick", "quiz", "categories", "shows", "library"];
+const TAB_IDS = ["quick", "quiz", "categories", "shows", "library", "tips"];
 
-function switchTab(tabId) {
+const MOBILE_QUERY = "(max-width: 899px)";
+
+function isMobileLayout() {
+  return window.matchMedia(MOBILE_QUERY).matches;
+}
+
+function setSidebarOpen(open) {
+  const sidebar = document.getElementById("sidebar");
+  const backdrop = document.getElementById("sidebarBackdrop");
+  const toggle = document.getElementById("menuToggle");
+
+  sidebar.classList.toggle("is-open", open);
+  backdrop.hidden = !open;
+  toggle.setAttribute("aria-expanded", String(open));
+  toggle.setAttribute("aria-label", open ? "Menüyü kapat" : "Menüyü aç");
+  document.body.classList.toggle("no-scroll", open);
+}
+
+function switchTab(tabId, options = {}) {
   TAB_IDS.forEach((id) => {
     const tabBtn = document.getElementById(`tab-${id}`);
     const panel = document.getElementById(`panel-${id}`);
@@ -144,24 +162,66 @@ function switchTab(tabId) {
     tabBtn.tabIndex = active ? 0 : -1;
     panel.hidden = !active;
   });
+
   if (tabId === "library") renderLibraryTab();
+
+  if (options.updateHash !== false && window.location.hash !== `#${tabId}`) {
+    // Bölümler paylaşılabilir/yer imlenebilir olsun diye adres çubuğuna yazılır.
+    history.replaceState(null, "", `#${tabId}`);
+  }
+  if (isMobileLayout()) setSidebarOpen(false);
+  if (options.scrollTop !== false) window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function initTabs() {
-  const tabList = document.querySelector('[role="tablist"]');
+  const menu = document.querySelector('[role="tablist"]');
+
   TAB_IDS.forEach((id) => {
     document.getElementById(`tab-${id}`).addEventListener("click", () => switchTab(id));
   });
-  tabList.addEventListener("keydown", (e) => {
-    if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+
+  menu.addEventListener("keydown", (event) => {
+    // Menü dikey olduğu için yukarı/aşağı; alışkanlık olsun diye sağ/sol da çalışır.
+    const back = ["ArrowUp", "ArrowLeft"].includes(event.key);
+    const forward = ["ArrowDown", "ArrowRight"].includes(event.key);
+    if (!back && !forward) return;
+
+    event.preventDefault();
     const currentIndex = TAB_IDS.findIndex(
       (id) => document.getElementById(`tab-${id}`).getAttribute("aria-selected") === "true"
     );
-    const dir = e.key === "ArrowRight" ? 1 : -1;
-    const nextIndex = (currentIndex + dir + TAB_IDS.length) % TAB_IDS.length;
+    const nextIndex = (currentIndex + (forward ? 1 : -1) + TAB_IDS.length) % TAB_IDS.length;
     const nextId = TAB_IDS[nextIndex];
-    switchTab(nextId);
+    switchTab(nextId, { scrollTop: false });
     document.getElementById(`tab-${nextId}`).focus();
+  });
+
+  // Mobil çekmece
+  document.getElementById("menuToggle").addEventListener("click", () => {
+    const open = document.getElementById("menuToggle").getAttribute("aria-expanded") === "true";
+    setSidebarOpen(!open);
+  });
+  document.getElementById("sidebarBackdrop").addEventListener("click", () => setSidebarOpen(false));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setSidebarOpen(false);
+  });
+
+  // Geri/ileri tuşları ve doğrudan yapıştırılan bağlantılar için
+  window.addEventListener("hashchange", () => {
+    const id = window.location.hash.replace("#", "");
+    if (TAB_IDS.includes(id)) switchTab(id, { updateHash: false, scrollTop: false });
+  });
+
+  // Masaüstüne genişletilince açık kalmış çekmeceyi kapat
+  window.matchMedia(MOBILE_QUERY).addEventListener("change", (event) => {
+    if (!event.matches) setSidebarOpen(false);
+  });
+
+  // Adresteki bölüme (varsa) aç
+  const fromHash = window.location.hash.replace("#", "");
+  switchTab(TAB_IDS.includes(fromHash) ? fromHash : "quick", {
+    updateHash: false,
+    scrollTop: false,
   });
 }
 

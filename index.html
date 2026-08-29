@@ -11,49 +11,73 @@
 <body>
 <a class="skip-link" href="#main">İçeriğe geç</a>
 
-<header class="site-header">
-  <div class="wrap">
-    <h1 class="logo">🌱 YouTubeLove</h1>
-    <p class="tagline">YouTube'a dalmadan önce, ne izleyeceğine niyetle karar ver.</p>
-  </div>
+<header class="topbar">
+  <button type="button" id="menuToggle" class="menu-toggle"
+          aria-expanded="false" aria-controls="sidebar" aria-label="Menüyü aç">
+    <span aria-hidden="true">☰</span>
+  </button>
+  <span class="topbar-title">🌱 YouTubeLove</span>
 </header>
 
-<main id="main" class="wrap">
+<div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+
+<div class="layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <h1 class="logo">🌱 YouTubeLove</h1>
+      <p class="tagline">YouTube'a dalmadan önce, ne izleyeceğine niyetle karar ver.</p>
+    </div>
+
+    <nav class="menu" role="tablist" aria-orientation="vertical" aria-label="Bölümler">
+      <button type="button" class="menu-item" id="tab-quick" role="tab" aria-selected="true" aria-controls="panel-quick">
+        <span class="menu-icon" aria-hidden="true">⚡</span><span class="menu-label">Hızlı Seçim</span>
+      </button>
+      <button type="button" class="menu-item" id="tab-quiz" role="tab" aria-selected="false" aria-controls="panel-quiz" tabindex="-1">
+        <span class="menu-icon" aria-hidden="true">📝</span><span class="menu-label">Kısa Test</span>
+      </button>
+      <button type="button" class="menu-item" id="tab-categories" role="tab" aria-selected="false" aria-controls="panel-categories" tabindex="-1">
+        <span class="menu-icon" aria-hidden="true">🗂️</span><span class="menu-label">Kategoriler</span>
+      </button>
+      <button type="button" class="menu-item" id="tab-shows" role="tab" aria-selected="false" aria-controls="panel-shows" tabindex="-1">
+        <span class="menu-icon" aria-hidden="true">🎬</span><span class="menu-label">Dizi &amp; Film</span>
+      </button>
+      <button type="button" class="menu-item" id="tab-library" role="tab" aria-selected="false" aria-controls="panel-library" tabindex="-1">
+        <span class="menu-icon" aria-hidden="true">📚</span><span class="menu-label">Kütüphanem</span>
+        <span id="libraryCount" class="badge" hidden>0</span>
+      </button>
+      <button type="button" class="menu-item" id="tab-tips" role="tab" aria-selected="false" aria-controls="panel-tips" tabindex="-1">
+        <span class="menu-icon" aria-hidden="true">💡</span><span class="menu-label">İpuçları</span>
+      </button>
+    </nav>
+
+    <section class="sidebar-tool" aria-label="İzleme niyeti ve zamanlayıcı">
+      <h2 class="tool-title">Bu sefer kaç dakika?</h2>
+      <p class="tool-help">Süreni seç, öneriler ona göre filtrelensin.</p>
+      <div class="chip-group chip-group-sm" id="intentDuration" role="group" aria-label="Süre seçimi"></div>
+      <div class="timer-controls">
+        <button type="button" id="timerStart" class="btn btn-secondary btn-small">⏱️ Zamanlayıcı</button>
+        <span id="timerDisplay" class="timer-display" hidden></span>
+        <button type="button" id="timerStop" class="btn btn-ghost btn-small" hidden>Durdur</button>
+      </div>
+      <p id="timerAlert" class="timer-alert" role="status" hidden>
+        ⏰ Süren doldu. Kısa bir ara vermeye ne dersin? Ayağa kalk, biraz su iç, gözlerini dinlendir.
+      </p>
+    </section>
+  </aside>
+
+  <main id="main" class="content">
 
   <section class="daily-pick" id="dailyPick" aria-label="Bugünün önerisi">
     <!-- app.js tarafından doldurulur -->
   </section>
 
-  <section class="intent-card" id="intentCard" aria-label="İzleme niyeti ve zamanlayıcı">
-    <div class="intent-row">
-      <div class="intent-text">
-        <h2>Bu sefer kaç dakika ayıracaksın?</h2>
-        <p class="muted">Süreni seç, öneriler ona göre filtrelensin. İstersen bir de geri sayım başlat.</p>
-      </div>
-      <div class="intent-controls">
-        <div class="chip-group" id="intentDuration" role="group" aria-label="Süre seçimi"></div>
-        <div class="timer-controls">
-          <button type="button" id="timerStart" class="btn btn-secondary">⏱️ Zamanlayıcı başlat</button>
-          <span id="timerDisplay" class="timer-display" hidden></span>
-          <button type="button" id="timerStop" class="btn btn-ghost" hidden>Durdur</button>
-        </div>
-      </div>
-    </div>
-    <p id="timerAlert" class="timer-alert" role="status" hidden>
-      ⏰ Süren doldu. Kısa bir ara vermeye ne dersin? Ayağa kalk, biraz su iç, gözlerini dinlendir.
-    </p>
-  </section>
-
-  <div class="tabs" role="tablist" aria-label="Öneri modları">
-    <button type="button" class="tab" id="tab-quick" role="tab" aria-selected="true" aria-controls="panel-quick">Hızlı Seçim</button>
-    <button type="button" class="tab" id="tab-quiz" role="tab" aria-selected="false" aria-controls="panel-quiz" tabindex="-1">Kısa Test</button>
-    <button type="button" class="tab" id="tab-categories" role="tab" aria-selected="false" aria-controls="panel-categories" tabindex="-1">Kategoriler</button>
-    <button type="button" class="tab" id="tab-shows" role="tab" aria-selected="false" aria-controls="panel-shows" tabindex="-1">Dizi &amp; Film</button>
-    <button type="button" class="tab" id="tab-library" role="tab" aria-selected="false" aria-controls="panel-library" tabindex="-1">Kütüphanem <span id="libraryCount" class="badge" hidden>0</span></button>
-  </div>
-
   <!-- ---- Hızlı Seçim ---- -->
   <section id="panel-quick" class="tab-panel" role="tabpanel" aria-labelledby="tab-quick">
+    <div class="panel-head">
+      <h2>⚡ Hızlı Seçim</h2>
+      <p class="muted">Nasıl hissettiğini ve ne istediğini seç; sana uygun aramaları getireyim.</p>
+    </div>
     <div class="picker">
       <div class="picker-group">
         <h3>Ruh halin</h3>
@@ -70,6 +94,10 @@
 
   <!-- ---- Kısa Test ---- -->
   <section id="panel-quiz" class="tab-panel" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+    <div class="panel-head">
+      <h2>📝 Kısa Test</h2>
+      <p class="muted">Beş soruda profilini çıkarayım, önerileri ona göre seçeyim.</p>
+    </div>
     <div id="quizContainer">
       <div class="quiz-progress">
         <div class="quiz-progress-bar" id="quizProgressBar"></div>
@@ -89,6 +117,10 @@
 
   <!-- ---- Kategoriler ---- -->
   <section id="panel-categories" class="tab-panel" role="tabpanel" aria-labelledby="tab-categories" hidden>
+    <div class="panel-head">
+      <h2>🗂️ Kategoriler</h2>
+      <p class="muted">Aklında bir alan varsa doğrudan oradan göz at.</p>
+    </div>
     <div class="picker">
       <div class="picker-group">
         <h3>Kategori</h3>
@@ -100,6 +132,9 @@
 
   <!-- ---- Dizi & Film ---- -->
   <section id="panel-shows" class="tab-panel" role="tabpanel" aria-labelledby="tab-shows" hidden>
+    <div class="panel-head">
+      <h2>🎬 Dizi &amp; Film</h2>
+    </div>
     <p class="muted panel-intro">
       Aklına gelmeyen eski dizi ve filmleri hatırlatan bir katalog. Dönem, tür veya ruh haline göre filtrele;
       izlediklerini işaretledikçe kütüphanen benzerlerini önermeye başlar.
@@ -219,6 +254,10 @@
 
   <!-- ---- Kütüphanem ---- -->
   <section id="panel-library" class="tab-panel" role="tabpanel" aria-labelledby="tab-library" hidden>
+    <div class="panel-head">
+      <h2>📚 Kütüphanem</h2>
+      <p class="muted">İzlediklerin, izleme listen ve kaydettiğin öneriler tek yerde.</p>
+    </div>
 
     <section class="library-section" aria-labelledby="watchedHeading">
       <h2 id="watchedHeading">📺 İzlediklerim</h2>
@@ -250,19 +289,24 @@
 
   </section>
 
-  <details class="tips-section">
-    <summary>💡 YouTube'u sakinleştirme ipuçları</summary>
-    <ul>
+  <!-- ---- İpuçları ---- -->
+  <section id="panel-tips" class="tab-panel" role="tabpanel" aria-labelledby="tab-tips" hidden>
+    <div class="panel-head">
+      <h2>💡 YouTube'u sakinleştirme ipuçları</h2>
+      <p class="muted">Platformu niyetle kullanmayı kolaylaştıran, bir kez yapıp unutacağın ayarlar.</p>
+    </div>
+    <ul class="tips-list">
       <li><strong>Otomatik oynatmayı kapat:</strong> Video ayarlarından "Otomatik oynatma"yı kapatmak, bir videodan diğerine sürüklenmeni engeller.</li>
       <li><strong>İzleme geçmişini duraklat:</strong> Ayarlar → Geçmiş ve gizlilik bölümünden izleme geçmişini duraklatmak, öneri akışının seni tanımasını yavaşlatır.</li>
       <li><strong>Bildirimleri kıs:</strong> Uygulama bildirimlerini kapatmak, "gel bak" dürtüsünü azaltır.</li>
       <li><strong>"Daha sonra izle" listesini kullan:</strong> Bir video ilgini çekerse hemen izlemek yerine listeye ekle; çoğu zaman ihtiyacın kalmadığını fark edersin.</li>
       <li><strong>Ana sayfa yerine aramayla başla:</strong> Bu site tam da bunun için var — önce niyetini belirle, sonra ara.</li>
-      <li><strong>Zaman sınırı koy:</strong> Yukarıdaki zamanlayıcıyı kullanarak izleme süreni önceden belirle.</li>
+      <li><strong>Zaman sınırı koy:</strong> Sol menüdeki zamanlayıcıyı kullanarak izleme süreni önceden belirle.</li>
     </ul>
-  </details>
+  </section>
 
-</main>
+  </main>
+</div>
 
 <footer class="site-footer">
   <div class="wrap">

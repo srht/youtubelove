@@ -7,6 +7,11 @@ seni doğrudan YouTube'un arama sonuçlarına yönlendirir — algoritmanın se�
 API anahtarı, backend veya build adımı gerektirmez. Hiçbir veri toplanmaz; tercihlerin yalnızca
 kendi tarayıcında (`localStorage`) tutulur.
 
+Bütün işlevler tek bir sayfada, soldaki menüden erişilen bölümler hâlinde toplanmıştır
+(mobilde ☰ düğmesiyle açılan çekmece menü). Her bölümün kendi adresi vardır
+(`#quick`, `#quiz`, `#categories`, `#shows`, `#library`, `#tips`), böylece doğrudan
+bağlantı verebilir veya yer imine ekleyebilirsin.
+
 ## Özellikler
 
 - **Hızlı Seçim** — ruh halini ve hedefini seç, anında öneri al.
@@ -22,10 +27,11 @@ kendi tarayıcında (`localStorage`) tutulur.
   üretilen sabit renkli bir kapak gösterilir.
 - **Kütüphanem** — izlediklerini işaretle; site "bunları izledin, bir de şunlara bak" diyerek
   benzerlerini önersin. Ayrıca izleme listen ve kaydettiğin öneriler de burada.
-- **Niyet kartı ve zamanlayıcı** — YouTube'a girmeden önce ne kadar vakit ayıracağını seç,
-  isteğe bağlı bir geri sayım başlat.
+- **İpuçları** — YouTube'u sakinleştirmek için bir kez yapıp unutacağın ayarlar.
+- **Niyet kartı ve zamanlayıcı** — menünün altında sabit durur: YouTube'a girmeden önce ne kadar
+  vakit ayıracağını seç, isteğe bağlı bir geri sayım başlat. Seçtiğin süre önerileri de filtreler.
 - **Bugünün önerisi** — her gün sabit, tarihe göre değişen bir öneri.
-- Açık/koyu tema, mobil uyumlu, klavye ile tam erişilebilir arayüz.
+- Açık/koyu tema, mobil uyumlu, klavye ile tam erişilebilir arayüz (menüde yön tuşlarıyla gezinme).
 
 ## Yerel çalıştırma
 

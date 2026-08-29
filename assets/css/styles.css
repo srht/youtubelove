@@ -53,9 +53,9 @@ body {
 }
 
 .wrap {
-  max-width: 960px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
 .skip-link {
@@ -70,27 +70,6 @@ body {
 }
 .skip-link:focus {
   left: 0;
-}
-
-.site-header {
-  background: var(--accent);
-  border-bottom: 1px solid var(--border);
-  padding: 28px 0;
-}
-
-.logo {
-  margin: 0 0 6px;
-  font-size: 1.6rem;
-}
-
-.tagline {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 1rem;
-}
-
-main {
-  padding: 24px 20px 60px;
 }
 
 h2, h3 {
@@ -184,83 +163,175 @@ h2, h3 {
   color: var(--text-muted);
 }
 
-/* ---- Intent card / timer ---- */
-.intent-card {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px 20px;
-  margin-bottom: 24px;
-  box-shadow: var(--shadow);
-}
-.intent-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
+/* ---- Üst çubuk (yalnızca mobil) ---- */
+.topbar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 40;
   align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
 }
-.intent-text h2 {
-  font-size: 1.1rem;
+.menu-toggle {
+  font: inherit;
+  font-size: 1.3rem;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--text);
 }
-.intent-text p {
-  margin: 0;
-  font-size: 0.9rem;
+.menu-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
-.intent-controls {
+.topbar-title {
+  font-weight: 700;
+}
+
+/* ---- İki sütunlu düzen ---- */
+.layout {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  align-items: start;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.content {
+  padding: 26px 24px 60px;
+  min-width: 0;
+}
+
+/* ---- Sol menü ---- */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  gap: 22px;
+  padding: 26px 18px;
+  background: var(--accent);
+  border-right: 1px solid var(--border);
+}
+.brand .logo {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+}
+.brand .tagline {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.menu-item {
+  font: inherit;
+  display: flex;
+  align-items: center;
   gap: 10px;
-  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.menu-item:hover {
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+.menu-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.menu-item[aria-selected="true"] {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-weight: 650;
+}
+.menu-item[aria-selected="true"] .badge {
+  background: var(--primary-contrast);
+  color: var(--primary);
+}
+.menu-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.menu-label {
+  flex: 1;
+}
+
+/* ---- Menüdeki niyet & zamanlayıcı aracı ---- */
+.sidebar-tool {
+  margin-top: auto;
+  padding: 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.tool-title {
+  margin: 0 0 3px;
+  font-size: 0.92rem;
+}
+.tool-help {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
 }
 .timer-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
 }
 .timer-display {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  font-size: 1.1rem;
-  padding: 6px 12px;
+  padding: 5px 10px;
   background: var(--chip-bg);
   border-radius: 8px;
 }
 .timer-alert {
-  margin: 14px 0 0;
-  padding: 12px 14px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  font-size: 0.82rem;
   background: var(--accent);
   border: 1px solid var(--border);
   border-radius: 10px;
 }
 
-/* ---- Tabs ---- */
-.tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 20px;
-  overflow-x: auto;
+/* ---- Bölüm başlıkları ---- */
+.panel-head {
+  margin-bottom: 18px;
 }
-.tab {
-  font: inherit;
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  padding: 10px 16px;
-  cursor: pointer;
-  color: var(--text-muted);
-  white-space: nowrap;
+.panel-head h2 {
+  margin: 0 0 4px;
+  font-size: 1.35rem;
 }
-.tab[aria-selected="true"] {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  font-weight: 600;
+.panel-head p {
+  margin: 0;
 }
-.tab:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-  border-radius: 6px;
+.tab-panel {
+  animation: fade-in 0.15s ease;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .badge {
   display: inline-block;
@@ -269,15 +340,48 @@ h2, h3 {
   border-radius: 999px;
   font-size: 0.75rem;
   padding: 1px 7px;
-  margin-left: 4px;
 }
 
-.tab-panel {
-  animation: fade-in 0.15s ease;
+/* ---- Mobil: menü açılır çekmece olur ---- */
+.sidebar-backdrop {
+  display: none;
 }
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@media (max-width: 899px) {
+  .topbar {
+    display: flex;
+  }
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .content {
+    padding: 20px 16px 60px;
+  }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 60;
+    width: 280px;
+    max-width: 86vw;
+    height: 100%;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+  .sidebar-backdrop:not([hidden]) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.45);
+  }
+  body.no-scroll {
+    overflow: hidden;
+  }
 }
 
 /* ---- Picker (chips) ---- */
@@ -671,23 +775,13 @@ h2, h3 {
 }
 
 /* ---- Tips ---- */
-.tips-section {
-  margin-top: 36px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 18px;
-}
-.tips-section summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-.tips-section ul {
-  margin: 12px 0 0;
+.tips-list {
+  margin: 0;
   padding-left: 20px;
+  max-width: 62ch;
 }
-.tips-section li {
-  margin-bottom: 8px;
+.tips-list li {
+  margin-bottom: 12px;
 }
 
 /* ---- Footer ---- */
@@ -695,17 +789,14 @@ h2, h3 {
   border-top: 1px solid var(--border);
   padding: 20px 0 40px;
   font-size: 0.85rem;
+  background: var(--bg-elevated);
 }
 .site-footer p {
   margin: 0 0 6px;
 }
 
 @media (max-width: 600px) {
-  .intent-row {
+  .form-row {
     flex-direction: column;
-    align-items: stretch;
-  }
-  .intent-controls {
-    align-items: stretch;
   }
 }
