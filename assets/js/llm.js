@@ -327,6 +327,15 @@ Kurallar:
 - Tıbbi tavsiye verme, tanı koyma. Sansasyonel veya kaygı artırıcı içerik önerme.
 - "why" alanı kullanıcıya "sen" diye hitap etsin ve kısa olsun.`;
 
+/** Bölüme göre modelden ne tür öneri istendiğini belirtir. */
+const FOCUS_INSTRUCTIONS = {
+  video: 'Yalnızca video/içerik önerisi ver; "kind" alanı hep "video" olsun.',
+  show: 'Yalnızca dizi ve film öner; "kind" alanı "dizi" veya "film" olsun. ' +
+    '"query" alanı yapımın adıyla birlikte YouTube\'da aratılacak metin olsun ' +
+    '(örn. "Bizimkiler dizisi bölüm").',
+  any: "Video önerileriyle dizi/film önerilerini karıştır.",
+};
+
 /**
  * Zevk profiline göre LLM'den öneri ister.
  * @param {string} profileText - insan tarafından okunabilir profil özeti
@@ -337,10 +346,13 @@ export async function generateLlmSuggestions(profileText, options = {}) {
   const config = getLlmConfig();
   const count = options.count ?? config.count ?? 6;
   const avoid = options.avoid ?? [];
+  const focus = FOCUS_INSTRUCTIONS[options.focus] ?? FOCUS_INSTRUCTIONS.any;
 
   const userPrompt = [
-    `Kullanıcının zevk profili:`,
+    `Kullanıcı hakkında bildiklerim:`,
     profileText || "(Henüz belirgin bir profil yok — genel, yumuşak başlangıç önerileri ver.)",
+    "",
+    focus,
     "",
     avoid.length > 0
       ? `Şunları ÖNERME (zaten gördü veya izledi): ${avoid.slice(0, 40).join(", ")}`

@@ -114,6 +114,11 @@
       </div>
       <button type="button" id="quickSubmit" class="btn btn-primary btn-large" disabled>Önerileri Getir</button>
     </div>
+    <div class="llm-bar" id="quickLlmBar" hidden>
+      <button type="button" id="quickLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
+      <span class="muted llm-bar-hint">Seçtiğin ruh hali ve hedefe göre yapay zekâdan öneri al.</span>
+    </div>
+    <div id="quickLlmResults" class="results-grid" aria-live="polite"></div>
     <div id="quickResults" class="results-grid" aria-live="polite"></div>
   </section>
 
@@ -136,6 +141,11 @@
     <div id="quizResultWrap" hidden>
       <p id="quizSummary" class="quiz-summary"></p>
       <button type="button" id="quizRestart" class="btn btn-ghost btn-small">Testi baştan başlat</button>
+      <div class="llm-bar" id="quizLlmBar" hidden>
+        <button type="button" id="quizLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
+        <span class="muted llm-bar-hint">Test profiline göre yapay zekâdan öneri al.</span>
+      </div>
+      <div id="quizLlmResults" class="results-grid" aria-live="polite"></div>
       <div id="quizResults" class="results-grid" aria-live="polite"></div>
     </div>
   </section>
@@ -152,6 +162,11 @@
         <div class="chip-group" id="categoryChips" role="group" aria-label="Kategori seçimi"></div>
       </div>
     </div>
+    <div class="llm-bar" id="categoryLlmBar" hidden>
+      <button type="button" id="categoryLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
+      <span class="muted llm-bar-hint">Seçtiğin kategoride yapay zekâdan öneri al.</span>
+    </div>
+    <div id="categoryLlmResults" class="results-grid" aria-live="polite"></div>
     <div id="categoryResults" class="results-grid" aria-live="polite"></div>
   </section>
 
@@ -274,6 +289,11 @@
       </div>
     </div>
 
+    <div class="llm-bar" id="showLlmBar" hidden>
+      <button type="button" id="showLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
+      <span class="muted llm-bar-hint">Seçtiğin filtrelere göre yapay zekâdan dizi/film önerisi al.</span>
+    </div>
+    <div id="showLlmResults" class="results-grid" aria-live="polite"></div>
     <div id="showResults" class="results-grid" aria-live="polite"></div>
   </section>
 
@@ -296,7 +316,12 @@
 
     <section class="library-section" id="similarSection" aria-labelledby="similarHeading" hidden>
       <h2 id="similarHeading">✨ Bunları izledin — bir de şunlara bak</h2>
-      <p class="muted">İzleme geçmişine göre seçildi.</p>
+      <p id="similarIntro" class="muted">İzleme geçmişine göre seçildi.</p>
+      <div class="llm-bar" id="similarLlmBar" hidden>
+        <button type="button" id="similarLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
+        <span class="muted llm-bar-hint">İzlediklerine göre yapay zekâdan dizi/film önerisi al.</span>
+      </div>
+      <div id="similarLlmResults" class="results-grid" aria-live="polite"></div>
       <div id="similarResults" class="results-grid" aria-live="polite"></div>
     </section>
 

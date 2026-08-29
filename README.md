@@ -63,15 +63,30 @@ Her şey yalnızca senin tarayıcında (`localStorage`) durur; hiçbir yere gön
 
 ## LLM önerileri (isteğe bağlı)
 
-**Ayarlar** bölümünden bir servis seçip API anahtarı girersen, Sana Özel bölümünde
-**“🤖 LLM ile öner”** düğmesi belirir. Model, hafızandan çıkarılan zevk profilini alır ve
-YouTube'da aratılacak yeni öneriler üretir; her kart neden önerildiğini yazar.
+**Ayarlar** bölümünden bir servis seçip API anahtarı girersen, **her bölümde**
+**“🤖 LLM ile öner”** düğmesi belirir. Model, YouTube'da aratılacak yeni öneriler üretir;
+her kart neden önerildiğini yazar.
+
+Her bölüm modele kendi bağlamını verir — üstüne genel zevk profilin de eklenir:
+
+| Bölüm | Modele giden bağlam | İstenen tür |
+|---|---|---|
+| Sana Özel | hafızandan çıkan zevk profili | video + dizi/film |
+| Hızlı Seçim | seçtiğin ruh hali, hedef ve süre | video |
+| Kısa Test | test cevaplarından çıkan profil | video |
+| Kategoriler | seçtiğin kategori | video |
+| Dizi & Film | seçtiğin dönem/tür/yapım/yoğunluk filtreleri + izlediklerin | dizi/film |
+| Kütüphanem | izlediğin yapımların listesi | dizi/film |
+
+LLM sonuçları kendi alanında, o bölümün normal sonuçlarının üstünde gösterilir; katalog
+sonuçlarını silmez.
 
 - Desteklenen servisler: **Anthropic (Claude)**, **OpenAI**, **Google Gemini**.
 - Model adı elle düzenlenebilir — model kimlikleri zamanla değişir. **Bağlantıyı test et**
   düğmesiyle ayarlarını tek tıkla doğrulayabilirsin.
 - LLM çağrısı otomatik yapılmaz; yalnızca düğmeye bastığında çalışır (istekler ücretlidir).
-- Çağrı başarısız olursa hata gösterilir ve site kendi motoruyla ürettiği önerilere düşer.
+- Çağrı başarısız olursa o bölümde hata mesajı gösterilir; bölümün kendi (yerel) önerileri
+  yerinde kalır, silinmez.
 
 **Modelin yanıtı ayrıştırılırken** kod çiti (` ```json `), giriş/kapanış cümlesi,
 `{"suggestions": [...]}` gibi sarmalayıcılar ve yanıtın token sınırında yarıda kesilmesi

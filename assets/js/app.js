@@ -414,30 +414,42 @@ function renderLlmCard(suggestion) {
   ]);
 }
 
-async function renderForYouWithLlm() {
-  const button = document.getElementById("foryouLlm");
-  const container = document.getElementById("foryouResults");
-  const original = button.textContent;
+/**
+ * Bir bölüme "LLM ile öner" davranışı bağlar.
+ * Her bölüm kendi bağlamını (seçili ruh hali, kategori, filtreler…) modele verir.
+ *
+ * @param {{buttonId:string, resultsId:string, focus:"video"|"show"|"any",
+ *          buildContext:()=>string, avoid?:()=>string[]}} options
+ */
+function setupLlmSection({ buttonId, resultsId, focus, buildContext, avoid }) {
+  const button = document.getElementById(buttonId);
+  if (!button) return;
 
-  button.disabled = true;
-  button.textContent = "🤖 Düşünüyor…";
-  container.innerHTML = "";
-  container.appendChild(el("p", { class: "muted", text: "Yapay zekâdan öneriler isteniyor…" }));
+  button.addEventListener("click", async () => {
+    const container = document.getElementById(resultsId);
+    const original = button.textContent;
 
-  try {
-    const profileText = memorySummary() ?? "";
-    const avoid = [...foryouShown].map((id) => getItemById(id)?.title ?? getShowById(id)?.title)
-      .filter(Boolean);
-
-    const suggestions = await generateLlmSuggestions(profileText, {
-      count: getLlmConfig().count,
-      avoid,
-    });
-
+    button.disabled = true;
+    button.textContent = "🤖 Düşünüyor…";
     container.innerHTML = "";
-    if (suggestions.length === 0) {
-      container.appendChild(el("p", { class: "muted", text: "Model bu sefer öneri üretemedi. Tekrar dene." }));
-    } else {
+    container.appendChild(el("p", { class: "muted", text: "Yapay zekâdan öneriler isteniyor…" }));
+
+    try {
+      // Bölümün kendi bağlamı + genel zevk profili birlikte gönderilir.
+      const context = [buildContext(), memorySummary()].filter(Boolean).join("\n");
+      const suggestions = await generateLlmSuggestions(context, {
+        count: getLlmConfig().count,
+        avoid: avoid ? avoid() : [],
+        focus,
+      });
+
+      container.innerHTML = "";
+      if (suggestions.length === 0) {
+        container.appendChild(
+          el("p", { class: "muted", text: "Model bu sefer öneri üretemedi. Tekrar dene." })
+        );
+        return;
+      }
       suggestions.forEach((suggestion) => container.appendChild(renderLlmCard(suggestion)));
       // LLM önerileri katalogda olmadığı için içeriği geçmişe birlikte yazılır.
       recordRecommendations(
@@ -448,32 +460,149 @@ async function renderForYouWithLlm() {
         })),
         "llm"
       );
+    } catch (error) {
+      container.innerHTML = "";
+      container.appendChild(
+        el("p", {
+          class: "form-status form-status-error",
+          text: `LLM önerisi alınamadı: ${error.message}`,
+        })
+      );
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
     }
-  } catch (error) {
-    // LLM başarısız olursa kullanıcı boşta kalmasın: yerel motorla devam.
-    container.innerHTML = "";
-    container.appendChild(
-      el("p", { class: "form-status form-status-error", text: `LLM önerisi alınamadı: ${error.message}` })
-    );
-    container.appendChild(
-      el("p", { class: "muted", text: "Bunun yerine kendi hafızandan üretilen öneriler:" })
-    );
-    const { picks } = personalizedPicks({ limit: 6, exclude: foryouShown });
-    picks.forEach((pick) => {
-      addForYouCard(container, pick);
-      foryouShown.add(pick.data.id);
-    });
-  } finally {
-    button.disabled = false;
-    button.textContent = original;
-  }
+  });
 }
 
-/** LLM düğmesinin görünürlüğünü ayarlara göre günceller. */
+/** Kart başlıklarını "şunları önerme" listesi olarak toplar. */
+function titlesIn(containerId) {
+  return [...document.querySelectorAll(`#${containerId} h4`)].map((h) => h.textContent.trim());
+}
+
+function labelsFor(list, ids) {
+  return ids.map((id) => list.find((x) => x.id === id)?.label).filter(Boolean);
+}
+
+/** Bütün bölümlerdeki LLM düğmelerini ayarlara göre gösterir/gizler. */
 function refreshLlmAvailability() {
   const ready = isLlmReady();
   document.getElementById("foryouLlm").hidden = !ready;
   document.getElementById("llmBadge").hidden = !ready;
+  document.querySelectorAll(".llm-bar").forEach((bar) => {
+    bar.hidden = !ready;
+  });
+}
+
+function initLlmSections() {
+  // Sana Özel — hafıza profili
+  setupLlmSection({
+    buttonId: "foryouLlm",
+    resultsId: "foryouResults",
+    focus: "any",
+    buildContext: () => "",
+    avoid: () => titlesIn("foryouResults"),
+  });
+
+  // Hızlı Seçim — seçili ruh hali + hedef
+  setupLlmSection({
+    buttonId: "quickLlm",
+    resultsId: "quickLlmResults",
+    focus: "video",
+    buildContext: () => {
+      const parts = [];
+      const mood = MOODS.find((m) => m.id === state.quick.mood);
+      const goal = GOALS.find((g) => g.id === state.quick.goal);
+      const duration = DURATIONS.find((d) => d.id === state.intentDuration);
+      if (mood) parts.push(`Şu an "${mood.label}" hissediyor.`);
+      if (goal) parts.push(`Hedefi: "${goal.label}".`);
+      if (duration) parts.push(`Ayırdığı süre: ${duration.label}.`);
+      return parts.length > 0 ? parts.join(" ") : "Henüz bir seçim yapmadı.";
+    },
+    avoid: () => titlesIn("quickResults"),
+  });
+
+  // Kısa Test — test cevapları
+  setupLlmSection({
+    buttonId: "quizLlm",
+    resultsId: "quizLlmResults",
+    focus: "video",
+    buildContext: () => {
+      const answers = state.quiz.answers;
+      const parts = [];
+      const mood = MOODS.find((m) => m.id === answers.mood);
+      const goal = GOALS.find((g) => g.id === answers.goal);
+      const duration = DURATIONS.find((d) => d.id === answers.duration);
+      if (mood) parts.push(`Ruh hali: ${mood.label}.`);
+      if (goal) parts.push(`Hedefi: ${goal.label}.`);
+      if (duration) parts.push(`Süre: ${duration.label}.`);
+      if (answers.energy) parts.push(`Enerjisi: ${answers.energy}.`);
+      const cats = labelsFor(CATEGORIES, answers.categories ?? []);
+      if (cats.length > 0) parts.push(`İlgi alanları: ${cats.join(", ")}.`);
+      return parts.join(" ");
+    },
+    avoid: () => titlesIn("quizResults"),
+  });
+
+  // Kategoriler — seçili kategori
+  setupLlmSection({
+    buttonId: "categoryLlm",
+    resultsId: "categoryLlmResults",
+    focus: "video",
+    buildContext: () => {
+      const category = CATEGORIES.find((c) => c.id === selectedCategory);
+      return category
+        ? `"${category.label}" kategorisine bakıyor. (${category.description})`
+        : "Henüz kategori seçmedi; genel öneriler ver.";
+    },
+    avoid: () => titlesIn("categoryResults"),
+  });
+
+  // Dizi & Film — seçili filtreler
+  setupLlmSection({
+    buttonId: "showLlm",
+    resultsId: "showLlmResults",
+    focus: "show",
+    buildContext: () => {
+      const parts = [];
+      const add = (list, id, prefix) => {
+        const found = list.find((x) => x.id === id);
+        if (found) parts.push(`${prefix}: ${found.label}`);
+      };
+      add(SHOW_ERAS, showFilters.era, "Dönem");
+      add(SHOW_GENRES, showFilters.genre, "Tür");
+      add(SHOW_MOODS, showFilters.mood, "Hissettirmesi gereken");
+      add(SHOW_ORIGINS, showFilters.origin, "Yapım");
+      add(SHOW_TYPES, showFilters.type, "Biçim");
+      add(SHOW_INTENSITIES, showFilters.intensity, "Yoğunluk");
+
+      const watched = getWatchedIds().map((id) => getShowById(id)?.title).filter(Boolean);
+      if (watched.length > 0) {
+        parts.push(`Daha önce izledikleri: ${watched.slice(0, 15).join(", ")}`);
+      }
+      return parts.length > 0
+        ? `Dizi/film arıyor. ${parts.join(". ")}.`
+        : "Eski, klasik dizi ve film arıyor.";
+    },
+    avoid: () => [...titlesIn("showResults").slice(0, 20), ...titlesIn("showLlmResults")],
+  });
+
+  // Kütüphane — izlediklerine benzer
+  setupLlmSection({
+    buttonId: "similarLlm",
+    resultsId: "similarLlmResults",
+    focus: "show",
+    buildContext: () => {
+      const watched = getWatchedIds().map((id) => getShowById(id)?.title).filter(Boolean);
+      return watched.length > 0
+        ? `Şunları izledi ve beğendi: ${watched.slice(0, 20).join(", ")}. Bunlara benzer yapımlar öner.`
+        : "Henüz izlediği bir yapım yok; klasik ve sakin yapımlar öner.";
+    },
+    avoid: () => [
+      ...getWatchedIds().map((id) => getShowById(id)?.title).filter(Boolean),
+      ...titlesIn("similarResults"),
+    ],
+  });
 }
 
 function initForYouTab() {
@@ -481,7 +610,6 @@ function initForYouTab() {
   refreshLlmAvailability();
 
   document.getElementById("foryouGenerate").addEventListener("click", renderForYou);
-  document.getElementById("foryouLlm").addEventListener("click", renderForYouWithLlm);
 
   document.getElementById("historyClear").addEventListener("click", () => {
     if (!window.confirm("Geçmiş öneriler silinsin mi? Kaydettiklerin ve izlediklerin kalır.")) return;
@@ -1129,7 +1257,18 @@ function renderSimilarSection() {
   const container = document.getElementById("similarResults");
   const suggestions = similarToWatched(getWatchedIds(), { limit: 6 });
 
-  section.hidden = suggestions.length === 0;
+  // LLM açıksa bölüm, henüz izlenen yapım olmasa da erişilebilir kalsın —
+  // düğme oradadır ve model izleme geçmişi olmadan da öneri üretebilir.
+  const hasWatched = getWatchedIds().length > 0;
+  section.hidden = suggestions.length === 0 && !isLlmReady();
+
+  document.getElementById("similarHeading").textContent = hasWatched
+    ? "✨ Bunları izledin — bir de şunlara bak"
+    : "✨ Dizi & film önerileri";
+  document.getElementById("similarIntro").textContent = hasWatched
+    ? "İzleme geçmişine göre seçildi."
+    : "Bir yapıma “izledim” dedikçe buradaki öneriler sana göre şekillenir.";
+
   container.innerHTML = "";
   suggestions.forEach(({ show, reason }) => container.appendChild(renderShowCard(show, reason)));
   recordRecommendations(
@@ -1351,6 +1490,7 @@ function init() {
   initCategoriesTab();
   initShowsTab();
   initForYouTab();
+  initLlmSections();
   initSettingsTab();
   updateLibraryCount();
 
