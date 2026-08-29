@@ -21,6 +21,10 @@ import { fetchSuggestions, debounce } from "./ytSuggest.js";
 import { createThumb } from "./thumb.js";
 import { recordEvent, clearMemory, getEvents } from "./memory.js";
 import { personalizedPicks, memorySummary } from "./personalize.js";
+import {
+  PROVIDERS, getProvider, getLlmConfig, saveLlmConfig, clearApiKey, isLlmReady, maskKey,
+} from "./llmSettings.js";
+import { generateLlmSuggestions, testConnection } from "./llm.js";
 import { buildSearchUrl } from "./youtube.js";
 import {
   isSaved,
@@ -139,7 +143,7 @@ function renderResults(container, items) {
 // Sekmeler
 // ---------------------------------------------------------------------------
 
-const TAB_IDS = ["foryou", "quick", "quiz", "categories", "shows", "library", "tips"];
+const TAB_IDS = ["foryou", "quick", "quiz", "categories", "shows", "library", "tips", "settings"];
 
 const MOBILE_QUERY = "(max-width: 899px)";
 
@@ -371,10 +375,90 @@ function addForYouCard(container, pick) {
   container.appendChild(card);
 }
 
+/** LLM kartı: modelin ürettiği başlık/sorgu/gerekçe. */
+function renderLlmCard(suggestion) {
+  const url = buildSearchUrl(suggestion.query);
+  const kindLabel = { video: "Video", dizi: "Dizi", film: "Film" }[suggestion.kind] ?? "Video";
+
+  return el("article", { class: "card llm-card" }, [
+    el("p", { class: "reason-note", text: `🤖 ${suggestion.why || "LLM önerisi"}` }),
+    el("div", { class: "card-top" }, [el("h4", { text: suggestion.title })]),
+    el("p", { class: "muted", text: `Arama: ${suggestion.query}` }),
+    el("div", { class: "card-tags" }, [
+      el("span", { class: "tag tag-llm", text: "LLM önerisi" }),
+      el("span", { class: "tag", text: kindLabel }),
+    ]),
+    el("div", { class: "card-actions" }, [
+      el("a", {
+        class: "watch-link",
+        href: url,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        text: "YouTube'da Ara ↗",
+      }),
+    ]),
+  ]);
+}
+
+async function renderForYouWithLlm() {
+  const button = document.getElementById("foryouLlm");
+  const container = document.getElementById("foryouResults");
+  const original = button.textContent;
+
+  button.disabled = true;
+  button.textContent = "🤖 Düşünüyor…";
+  container.innerHTML = "";
+  container.appendChild(el("p", { class: "muted", text: "Yapay zekâdan öneriler isteniyor…" }));
+
+  try {
+    const profileText = memorySummary() ?? "";
+    const avoid = [...foryouShown].map((id) => getItemById(id)?.title ?? getShowById(id)?.title)
+      .filter(Boolean);
+
+    const suggestions = await generateLlmSuggestions(profileText, {
+      count: getLlmConfig().count,
+      avoid,
+    });
+
+    container.innerHTML = "";
+    if (suggestions.length === 0) {
+      container.appendChild(el("p", { class: "muted", text: "Model bu sefer öneri üretemedi. Tekrar dene." }));
+    } else {
+      suggestions.forEach((suggestion) => container.appendChild(renderLlmCard(suggestion)));
+    }
+  } catch (error) {
+    // LLM başarısız olursa kullanıcı boşta kalmasın: yerel motorla devam.
+    container.innerHTML = "";
+    container.appendChild(
+      el("p", { class: "form-status form-status-error", text: `LLM önerisi alınamadı: ${error.message}` })
+    );
+    container.appendChild(
+      el("p", { class: "muted", text: "Bunun yerine kendi hafızandan üretilen öneriler:" })
+    );
+    const { picks } = personalizedPicks({ limit: 6, exclude: foryouShown });
+    picks.forEach((pick) => {
+      addForYouCard(container, pick);
+      foryouShown.add(pick.data.id);
+    });
+  } finally {
+    button.disabled = false;
+    button.textContent = original;
+  }
+}
+
+/** LLM düğmesinin görünürlüğünü ayarlara göre günceller. */
+function refreshLlmAvailability() {
+  const ready = isLlmReady();
+  document.getElementById("foryouLlm").hidden = !ready;
+  document.getElementById("llmBadge").hidden = !ready;
+}
+
 function initForYouTab() {
   renderMemoryStatus();
+  refreshLlmAvailability();
 
   document.getElementById("foryouGenerate").addEventListener("click", renderForYou);
+  document.getElementById("foryouLlm").addEventListener("click", renderForYouWithLlm);
 
   document.getElementById("memoryReset").addEventListener("click", () => {
     if (!window.confirm("Hafıza sıfırlansın mı? Seçim geçmişin silinir; kaydettiklerin ve izledikleri listesi kalır.")) return;
@@ -1044,6 +1128,118 @@ function renderLibraryTab() {
 }
 
 // ---------------------------------------------------------------------------
+// Ayarlar: LLM servisi ve API anahtarı
+// ---------------------------------------------------------------------------
+
+function setLlmStatus(message, kind = "info") {
+  const status = document.getElementById("llmStatus");
+  status.textContent = message;
+  status.className = `form-status form-status-${kind}`;
+}
+
+function syncLlmFormFromConfig() {
+  const config = getLlmConfig();
+  const provider = getProvider(config.provider);
+
+  document.getElementById("llmEnabled").checked = config.enabled;
+  document.getElementById("llmProvider").value = config.provider;
+  document.getElementById("llmModel").value = config.model;
+  document.getElementById("llmModel").placeholder = provider.defaultModel;
+  document.getElementById("llmCount").value = config.count;
+
+  const keyInput = document.getElementById("llmKey");
+  keyInput.value = "";
+  keyInput.placeholder = config.apiKey ? maskKey(config.apiKey) : provider.keyPlaceholder;
+
+  document.getElementById("llmKeyState").textContent = config.apiKey
+    ? `Kayıtlı anahtar: ${maskKey(config.apiKey)} — değiştirmek için yenisini yaz. `
+    : "Henüz anahtar kaydedilmedi. ";
+
+  const link = document.getElementById("llmKeysLink");
+  link.href = provider.keysUrl;
+
+  refreshLlmAvailability();
+}
+
+function initSettingsTab() {
+  const providerSelect = document.getElementById("llmProvider");
+  providerSelect.innerHTML = "";
+  PROVIDERS.forEach((provider) => {
+    providerSelect.appendChild(el("option", { value: provider.id, text: provider.label }));
+  });
+
+  syncLlmFormFromConfig();
+
+  providerSelect.addEventListener("change", () => {
+    // Servis değişince model alanını yeni servisin varsayılanına çek.
+    const provider = getProvider(providerSelect.value);
+    document.getElementById("llmModel").value = provider.defaultModel;
+    document.getElementById("llmModel").placeholder = provider.defaultModel;
+    document.getElementById("llmKey").placeholder = provider.keyPlaceholder;
+    document.getElementById("llmKeysLink").href = provider.keysUrl;
+  });
+
+  document.getElementById("llmForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const typedKey = document.getElementById("llmKey").value.trim();
+    const enabled = document.getElementById("llmEnabled").checked;
+    const existingKey = getLlmConfig().apiKey;
+
+    if (enabled && !typedKey && !existingKey) {
+      setLlmStatus("Etkinleştirmek için önce bir API anahtarı gir.", "error");
+      return;
+    }
+
+    const patch = {
+      enabled,
+      provider: providerSelect.value,
+      model: document.getElementById("llmModel").value.trim(),
+      count: Math.min(12, Math.max(3, Number(document.getElementById("llmCount").value) || 6)),
+    };
+    // Alan boşsa mevcut anahtar korunur.
+    if (typedKey) patch.apiKey = typedKey;
+
+    saveLlmConfig(patch);
+    syncLlmFormFromConfig();
+    setLlmStatus("Ayarlar kaydedildi ✅", "success");
+  });
+
+  document.getElementById("llmTest").addEventListener("click", async () => {
+    const button = document.getElementById("llmTest");
+    const typedKey = document.getElementById("llmKey").value.trim();
+    const config = {
+      ...getLlmConfig(),
+      provider: providerSelect.value,
+      model: document.getElementById("llmModel").value.trim() || getProvider(providerSelect.value).defaultModel,
+    };
+    if (typedKey) config.apiKey = typedKey;
+
+    if (!config.apiKey) {
+      setLlmStatus("Önce bir API anahtarı gir.", "error");
+      return;
+    }
+
+    button.disabled = true;
+    setLlmStatus("Bağlantı test ediliyor…", "info");
+    try {
+      const reply = await testConnection(config);
+      setLlmStatus(`Bağlantı başarılı ✅ (model yanıtı: “${reply}”)`, "success");
+    } catch (error) {
+      setLlmStatus(`Bağlantı başarısız: ${error.message}`, "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  document.getElementById("llmClear").addEventListener("click", () => {
+    if (!window.confirm("Kayıtlı API anahtarı silinsin mi? LLM önerileri de kapatılır.")) return;
+    clearApiKey();
+    syncLlmFormFromConfig();
+    setLlmStatus("Anahtar silindi.", "info");
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Başlangıç
 // ---------------------------------------------------------------------------
 
@@ -1056,6 +1252,7 @@ function init() {
   initCategoriesTab();
   initShowsTab();
   initForYouTab();
+  initSettingsTab();
   updateLibraryCount();
 
   const previousProfile = getQuizProfile();

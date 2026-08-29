@@ -9,7 +9,7 @@ kendi tarayıcında (`localStorage`) tutulur.
 
 Bütün işlevler tek bir sayfada, soldaki menüden erişilen bölümler hâlinde toplanmıştır
 (mobilde ☰ düğmesiyle açılan çekmece menü). Her bölümün kendi adresi vardır
-(`#foryou`, `#quick`, `#quiz`, `#categories`, `#shows`, `#library`, `#tips`), böylece doğrudan
+(`#foryou`, `#quick`, `#quiz`, `#categories`, `#shows`, `#library`, `#tips`, `#settings`), böylece doğrudan
 bağlantı verebilir veya yer imine ekleyebilirsin.
 
 ## Özellikler
@@ -31,6 +31,9 @@ bağlantı verebilir veya yer imine ekleyebilirsin.
 - **Kütüphanem** — izlediklerini işaretle; site "bunları izledin, bir de şunlara bak" diyerek
   benzerlerini önersin. Ayrıca izleme listen ve kaydettiğin öneriler de burada.
 - **İpuçları** — YouTube'u sakinleştirmek için bir kez yapıp unutacağın ayarlar.
+- **Ayarlar (LLM)** — istersen bir yapay zekâ servisi (Anthropic / OpenAI / Google Gemini)
+  tanımlayıp önerileri modelden de alabilirsin. Anahtar tanımlı değilken site tamamen
+  kendi motoruyla, aynen eskisi gibi çalışır.
 - **Niyet kartı ve zamanlayıcı** — menünün altında sabit durur: YouTube'a girmeden önce ne kadar
   vakit ayıracağını seç, isteğe bağlı bir geri sayım başlat. Seçtiğin süre önerileri de filtreler.
 - Açık/koyu tema, mobil uyumlu, klavye ile tam erişilebilir arayüz (menüde yön tuşlarıyla gezinme).
@@ -53,6 +56,34 @@ kaydettiklerin ve izlediklerin listesi (kütüphanen) durmaya devam eder, dolay�
 tamamen sıfırlanmaz — bu davranış onay penceresinde de belirtilir.
 
 Her şey yalnızca senin tarayıcında (`localStorage`) durur; hiçbir yere gönderilmez.
+
+## LLM önerileri (isteğe bağlı)
+
+**Ayarlar** bölümünden bir servis seçip API anahtarı girersen, Sana Özel bölümünde
+**“🤖 LLM ile öner”** düğmesi belirir. Model, hafızandan çıkarılan zevk profilini alır ve
+YouTube'da aratılacak yeni öneriler üretir; her kart neden önerildiğini yazar.
+
+- Desteklenen servisler: **Anthropic (Claude)**, **OpenAI**, **Google Gemini**.
+- Model adı elle düzenlenebilir — model kimlikleri zamanla değişir. **Bağlantıyı test et**
+  düğmesiyle ayarlarını tek tıkla doğrulayabilirsin.
+- LLM çağrısı otomatik yapılmaz; yalnızca düğmeye bastığında çalışır (istekler ücretlidir).
+- Çağrı başarısız olursa hata gösterilir ve site kendi motoruyla ürettiği önerilere düşer.
+
+### ⚠️ API anahtarı güvenliği
+
+Anahtar **yalnızca senin tarayıcında** (`localStorage`) saklanır; bu depoya, bize veya
+herhangi bir sunucuya gönderilmez. İstekler tarayıcından doğrudan seçtiğin servise gider.
+Buna karşılık:
+
+- Tarayıcına erişimi olan **herkes anahtarı okuyabilir** — ortak bilgisayarda anahtar girme.
+- Site herkese açık olsa bile anahtar siteye gömülü değildir; her ziyaretçi kendi anahtarını
+  girer. Yani anahtarını yayınlamış olmazsın.
+- Mümkünse **harcama limiti tanımlı, sadece bu iş için üretilmiş** bir anahtar kullan.
+- İşin bitince **Anahtarı sil** düğmesiyle temizleyebilirsin.
+
+Kod: sağlayıcı ayarları `assets/js/llmSettings.js`, HTTP adaptörleri `assets/js/llm.js`.
+Proje build adımı olmayan saf tarayıcı JS'i olduğu ve üç sağlayıcı desteklendiği için resmî
+SDK'lar yerine doğrudan `fetch` kullanılır.
 
 ## Yerel çalıştırma
 
@@ -160,6 +191,8 @@ assets/js/shows.js         dizi & film kataloğu ve sabitleri
 assets/js/customShows.js   kullanıcının formdan eklediği yapımlar (localStorage)
 assets/js/memory.js        seçim/izleme geçmişinin ham kaydı (hafıza)
 assets/js/personalize.js   hafızadan zevk profili ve dinamik öneriler
+assets/js/llmSettings.js   LLM servis seçimi ve API anahtarı saklama
+assets/js/llm.js           sağlayıcıdan bağımsız LLM istemcisi (Anthropic/OpenAI/Gemini)
 assets/js/ytSuggest.js     YouTube arama önerileri (JSONP, anahtarsız)
 assets/js/thumb.js         kart kapak görselleri (YouTube küçük resmi / üretilmiş kapak)
 assets/js/youtube.js       YouTube arama URL'i üretimi

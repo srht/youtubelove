@@ -52,6 +52,10 @@
       <button type="button" class="menu-item" id="tab-tips" role="tab" aria-selected="false" aria-controls="panel-tips" tabindex="-1">
         <span class="menu-icon" aria-hidden="true">💡</span><span class="menu-label">İpuçları</span>
       </button>
+      <button type="button" class="menu-item" id="tab-settings" role="tab" aria-selected="false" aria-controls="panel-settings" tabindex="-1">
+        <span class="menu-icon" aria-hidden="true">⚙️</span><span class="menu-label">Ayarlar</span>
+        <span id="llmBadge" class="badge badge-soft" hidden>LLM</span>
+      </button>
     </nav>
 
     <section class="sidebar-tool" aria-label="İzleme niyeti ve zamanlayıcı">
@@ -85,6 +89,7 @@
       </div>
       <div class="foryou-actions">
         <button type="button" id="foryouGenerate" class="btn btn-primary btn-large">Önerileri göster</button>
+        <button type="button" id="foryouLlm" class="btn btn-secondary btn-large" hidden>🤖 LLM ile öner</button>
         <button type="button" id="memoryReset" class="btn btn-ghost btn-small">Hafızayı sıfırla</button>
       </div>
     </div>
@@ -323,6 +328,65 @@
       <li><strong>Ana sayfa yerine aramayla başla:</strong> Bu site tam da bunun için var — önce niyetini belirle, sonra ara.</li>
       <li><strong>Zaman sınırı koy:</strong> Sol menüdeki zamanlayıcıyı kullanarak izleme süreni önceden belirle.</li>
     </ul>
+  </section>
+
+  <!-- ---- Ayarlar ---- -->
+  <section id="panel-settings" class="tab-panel" role="tabpanel" aria-labelledby="tab-settings" hidden>
+    <div class="panel-head">
+      <h2>⚙️ Ayarlar</h2>
+      <p class="muted">Bir yapay zekâ servisi tanımlarsan, öneriler o servisten de üretilebilir.</p>
+    </div>
+
+    <div class="warning-box" role="note">
+      <strong>⚠️ API anahtarın hakkında</strong>
+      <p>
+        Anahtarın yalnızca <strong>senin tarayıcında</strong> (localStorage) saklanır; depoya,
+        bize veya başka bir sunucuya gönderilmez. İstekler tarayıcından doğrudan seçtiğin
+        servise gider. Ancak tarayıcına erişimi olan herkes anahtarı okuyabilir — bu yüzden
+        <strong>ortak kullanılan bir bilgisayarda anahtar girme</strong> ve mümkünse
+        harcama limiti tanımlı, sadece bu iş için üretilmiş bir anahtar kullan.
+      </p>
+    </div>
+
+    <form id="llmForm" class="add-form" novalidate>
+      <label class="field checkbox-field" for="llmEnabled">
+        <input type="checkbox" id="llmEnabled" name="enabled" />
+        <span>LLM önerilerini etkinleştir</span>
+      </label>
+
+      <div class="form-row">
+        <label class="field" for="llmProvider">
+          <span class="field-label">Servis</span>
+          <select id="llmProvider" name="provider"></select>
+        </label>
+        <label class="field field-grow" for="llmModel">
+          <span class="field-label">Model</span>
+          <input type="text" id="llmModel" name="model" autocomplete="off" aria-describedby="llmModelHelp" />
+          <small id="llmModelHelp" class="field-help">Boş bırakırsan servisin varsayılanı kullanılır. Model adları zamanla değişebilir; gerekirse elle düzelt.</small>
+        </label>
+      </div>
+
+      <label class="field" for="llmKey">
+        <span class="field-label">API anahtarı</span>
+        <input type="password" id="llmKey" name="apiKey" autocomplete="off" spellcheck="false" aria-describedby="llmKeyHelp" />
+        <small id="llmKeyHelp" class="field-help">
+          <span id="llmKeyState"></span>
+          <a id="llmKeysLink" href="#" target="_blank" rel="noopener noreferrer">Anahtar nereden alınır?</a>
+        </small>
+      </label>
+
+      <label class="field field-year" for="llmCount">
+        <span class="field-label">Öneri sayısı</span>
+        <input type="number" id="llmCount" name="count" min="3" max="12" />
+      </label>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <button type="button" id="llmTest" class="btn btn-secondary">Bağlantıyı test et</button>
+        <button type="button" id="llmClear" class="btn btn-ghost btn-small">Anahtarı sil</button>
+        <p id="llmStatus" class="form-status" role="status"></p>
+      </div>
+    </form>
   </section>
 
   </main>

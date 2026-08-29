@@ -40,6 +40,11 @@
   box-sizing: border-box;
 }
 
+/* display kuralları HTML'in [hidden] özniteliğini ezmesin. */
+[hidden] {
+  display: none !important;
+}
+
 html {
   color-scheme: light dark;
 }
@@ -768,6 +773,45 @@ h2, h3 {
 .suggest-item:hover,
 .suggest-item.is-active {
   background: var(--accent);
+}
+
+/* ---- Ayarlar / LLM ---- */
+.warning-box {
+  padding: 14px 18px;
+  margin-bottom: 22px;
+  background: var(--accent);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--danger);
+  border-radius: 10px;
+}
+.warning-box p {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.checkbox-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.checkbox-field input {
+  width: auto;
+  margin: 0;
+}
+.badge-soft {
+  background: var(--chip-bg);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+}
+.tag-llm {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-weight: 600;
+}
+.llm-card .reason-note {
+  color: var(--text-muted);
 }
 
 /* ---- Kütüphanem ---- */
