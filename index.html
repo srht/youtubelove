@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YouTubeLove — Bilinçli İzleme Önerileri</title>
+<meta name="description" content="YouTube'a girmeden önce niyetini belirle. Ruh haline ve hedeflerine göre kişisel gelişim ve zihinsel sağlık odaklı video önerileri." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+<link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">İçeriğe geç</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="logo">🌱 YouTubeLove</h1>
+    <p class="tagline">YouTube'a dalmadan önce, ne izleyeceğine niyetle karar ver.</p>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+
+  <section class="daily-pick" id="dailyPick" aria-label="Bugünün önerisi">
+    <!-- app.js tarafından doldurulur -->
+  </section>
+
+  <section class="intent-card" id="intentCard" aria-label="İzleme niyeti ve zamanlayıcı">
+    <div class="intent-row">
+      <div class="intent-text">
+        <h2>Bu sefer kaç dakika ayıracaksın?</h2>
+        <p class="muted">Süreni seç, öneriler ona göre filtrelensin. İstersen bir de geri sayım başlat.</p>
+      </div>
+      <div class="intent-controls">
+        <div class="chip-group" id="intentDuration" role="group" aria-label="Süre seçimi"></div>
+        <div class="timer-controls">
+          <button type="button" id="timerStart" class="btn btn-secondary">⏱️ Zamanlayıcı başlat</button>
+          <span id="timerDisplay" class="timer-display" hidden></span>
+          <button type="button" id="timerStop" class="btn btn-ghost" hidden>Durdur</button>
+        </div>
+      </div>
+    </div>
+    <p id="timerAlert" class="timer-alert" role="status" hidden>
+      ⏰ Süren doldu. Kısa bir ara vermeye ne dersin? Ayağa kalk, biraz su iç, gözlerini dinlendir.
+    </p>
+  </section>
+
+  <div class="tabs" role="tablist" aria-label="Öneri modları">
+    <button type="button" class="tab" id="tab-quick" role="tab" aria-selected="true" aria-controls="panel-quick">Hızlı Seçim</button>
+    <button type="button" class="tab" id="tab-quiz" role="tab" aria-selected="false" aria-controls="panel-quiz" tabindex="-1">Kısa Test</button>
+    <button type="button" class="tab" id="tab-categories" role="tab" aria-selected="false" aria-controls="panel-categories" tabindex="-1">Kategoriler</button>
+    <button type="button" class="tab" id="tab-saved" role="tab" aria-selected="false" aria-controls="panel-saved" tabindex="-1">Kaydedilenler <span id="savedCount" class="badge" hidden>0</span></button>
+  </div>
+
+  <!-- ---- Hızlı Seçim ---- -->
+  <section id="panel-quick" class="tab-panel" role="tabpanel" aria-labelledby="tab-quick">
+    <div class="picker">
+      <div class="picker-group">
+        <h3>Ruh halin</h3>
+        <div class="chip-group" id="quickMoods" role="group" aria-label="Ruh hali seçimi"></div>
+      </div>
+      <div class="picker-group">
+        <h3>Hedefin</h3>
+        <div class="chip-group" id="quickGoals" role="group" aria-label="Hedef seçimi"></div>
+      </div>
+      <button type="button" id="quickSubmit" class="btn btn-primary btn-large" disabled>Önerileri Getir</button>
+    </div>
+    <div id="quickResults" class="results-grid" aria-live="polite"></div>
+  </section>
+
+  <!-- ---- Kısa Test ---- -->
+  <section id="panel-quiz" class="tab-panel" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+    <div id="quizContainer">
+      <div class="quiz-progress">
+        <div class="quiz-progress-bar" id="quizProgressBar"></div>
+      </div>
+      <div id="quizQuestion" class="quiz-question"></div>
+      <div class="quiz-nav">
+        <button type="button" id="quizBack" class="btn btn-ghost" disabled>Geri</button>
+        <button type="button" id="quizNext" class="btn btn-primary" disabled>İleri</button>
+      </div>
+    </div>
+    <div id="quizResultWrap" hidden>
+      <p id="quizSummary" class="quiz-summary"></p>
+      <button type="button" id="quizRestart" class="btn btn-ghost btn-small">Testi baştan başlat</button>
+      <div id="quizResults" class="results-grid" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ---- Kategoriler ---- -->
+  <section id="panel-categories" class="tab-panel" role="tabpanel" aria-labelledby="tab-categories" hidden>
+    <div class="picker">
+      <div class="picker-group">
+        <h3>Kategori</h3>
+        <div class="chip-group" id="categoryChips" role="group" aria-label="Kategori seçimi"></div>
+      </div>
+    </div>
+    <div id="categoryResults" class="results-grid" aria-live="polite"></div>
+  </section>
+
+  <!-- ---- Kaydedilenler ---- -->
+  <section id="panel-saved" class="tab-panel" role="tabpanel" aria-labelledby="tab-saved" hidden>
+    <p id="savedEmpty" class="muted">Henüz kaydedilen bir öneri yok. Beğendiğin önerilerdeki 🤍 ikonuna tıklayarak buraya ekleyebilirsin.</p>
+    <div id="savedResults" class="results-grid" aria-live="polite"></div>
+  </section>
+
+  <details class="tips-section">
+    <summary>💡 YouTube'u sakinleştirme ipuçları</summary>
+    <ul>
+      <li><strong>Otomatik oynatmayı kapat:</strong> Video ayarlarından "Otomatik oynatma"yı kapatmak, bir videodan diğerine sürüklenmeni engeller.</li>
+      <li><strong>İzleme geçmişini duraklat:</strong> Ayarlar → Geçmiş ve gizlilik bölümünden izleme geçmişini duraklatmak, öneri akışının seni tanımasını yavaşlatır.</li>
+      <li><strong>Bildirimleri kıs:</strong> Uygulama bildirimlerini kapatmak, "gel bak" dürtüsünü azaltır.</li>
+      <li><strong>"Daha sonra izle" listesini kullan:</strong> Bir video ilgini çekerse hemen izlemek yerine listeye ekle; çoğu zaman ihtiyacın kalmadığını fark edersin.</li>
+      <li><strong>Ana sayfa yerine aramayla başla:</strong> Bu site tam da bunun için var — önce niyetini belirle, sonra ara.</li>
+      <li><strong>Zaman sınırı koy:</strong> Yukarıdaki zamanlayıcıyı kullanarak izleme süreni önceden belirle.</li>
+    </ul>
+  </details>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Bu site tıbbi tavsiye vermez; kaygı, uyku veya ruh hali ile ilgili ciddi zorluklar yaşıyorsan bir uzmana danışmanı öneririz.</p>
+    <p class="muted">Veri toplanmaz, hesap gerekmez. Tercihlerin yalnızca tarayıcında (localStorage) saklanır.</p>
+  </div>
+</footer>
+
+<script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
