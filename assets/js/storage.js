@@ -6,6 +6,8 @@ const KEYS = {
   RECENT: "yl_recent_v1",
   QUIZ_PROFILE: "yl_quiz_profile_v1",
   PREFS: "yl_prefs_v1",
+  WATCHED: "yl_watched_v1",
+  SAVED_SHOWS: "yl_saved_shows_v1",
 };
 
 const memoryFallback = new Map();
@@ -81,6 +83,54 @@ export function getQuizProfile() {
 
 export function saveQuizProfile(profile) {
   writeJson(KEYS.QUIZ_PROFILE, profile);
+}
+
+// ---- İzlenenler kütüphanesi (dizi/film) ----
+// [{ id, watchedAt }] biçiminde, en son izlenen başta.
+
+export function getWatched() {
+  const raw = readJson(KEYS.WATCHED, []);
+  return Array.isArray(raw) ? raw.filter((e) => e && e.id) : [];
+}
+
+export function getWatchedIds() {
+  return getWatched().map((e) => e.id);
+}
+
+export function isWatched(showId) {
+  return getWatchedIds().includes(showId);
+}
+
+/** İzlendi işaretini açar/kapatır; yeni durumu (true = izlendi) döndürür. */
+export function toggleWatched(showId) {
+  const entries = getWatched();
+  const idx = entries.findIndex((e) => e.id === showId);
+  if (idx === -1) {
+    entries.unshift({ id: showId, watchedAt: new Date().toISOString() });
+    writeJson(KEYS.WATCHED, entries);
+    return true;
+  }
+  entries.splice(idx, 1);
+  writeJson(KEYS.WATCHED, entries);
+  return false;
+}
+
+// ---- Kaydedilen dizi/filmler (izleme listesi) ----
+export function getSavedShowIds() {
+  return readJson(KEYS.SAVED_SHOWS, []);
+}
+
+export function isShowSaved(showId) {
+  return getSavedShowIds().includes(showId);
+}
+
+export function toggleSavedShow(showId) {
+  const ids = getSavedShowIds();
+  const idx = ids.indexOf(showId);
+  if (idx === -1) ids.push(showId);
+  else ids.splice(idx, 1);
+  writeJson(KEYS.SAVED_SHOWS, ids);
+  return ids.includes(showId);
 }
 
 // ---- Genel tercihler (dil vb.) ----

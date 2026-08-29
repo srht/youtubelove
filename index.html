@@ -48,7 +48,8 @@
     <button type="button" class="tab" id="tab-quick" role="tab" aria-selected="true" aria-controls="panel-quick">Hızlı Seçim</button>
     <button type="button" class="tab" id="tab-quiz" role="tab" aria-selected="false" aria-controls="panel-quiz" tabindex="-1">Kısa Test</button>
     <button type="button" class="tab" id="tab-categories" role="tab" aria-selected="false" aria-controls="panel-categories" tabindex="-1">Kategoriler</button>
-    <button type="button" class="tab" id="tab-saved" role="tab" aria-selected="false" aria-controls="panel-saved" tabindex="-1">Kaydedilenler <span id="savedCount" class="badge" hidden>0</span></button>
+    <button type="button" class="tab" id="tab-shows" role="tab" aria-selected="false" aria-controls="panel-shows" tabindex="-1">Dizi &amp; Film</button>
+    <button type="button" class="tab" id="tab-library" role="tab" aria-selected="false" aria-controls="panel-library" tabindex="-1">Kütüphanem <span id="libraryCount" class="badge" hidden>0</span></button>
   </div>
 
   <!-- ---- Hızlı Seçim ---- -->
@@ -97,10 +98,81 @@
     <div id="categoryResults" class="results-grid" aria-live="polite"></div>
   </section>
 
-  <!-- ---- Kaydedilenler ---- -->
-  <section id="panel-saved" class="tab-panel" role="tabpanel" aria-labelledby="tab-saved" hidden>
-    <p id="savedEmpty" class="muted">Henüz kaydedilen bir öneri yok. Beğendiğin önerilerdeki 🤍 ikonuna tıklayarak buraya ekleyebilirsin.</p>
-    <div id="savedResults" class="results-grid" aria-live="polite"></div>
+  <!-- ---- Dizi & Film ---- -->
+  <section id="panel-shows" class="tab-panel" role="tabpanel" aria-labelledby="tab-shows" hidden>
+    <p class="muted panel-intro">
+      Aklına gelmeyen eski dizi ve filmleri hatırlatan bir katalog. Dönem, tür veya ruh haline göre filtrele;
+      izlediklerini işaretledikçe kütüphanen benzerlerini önermeye başlar.
+    </p>
+
+    <div class="picker">
+      <div class="picker-group">
+        <h3>Dönem</h3>
+        <div class="chip-group" id="showEraChips" role="group" aria-label="Dönem seçimi"></div>
+      </div>
+      <div class="picker-group">
+        <h3>Tür</h3>
+        <div class="chip-group" id="showGenreChips" role="group" aria-label="Tür seçimi"></div>
+      </div>
+      <div class="picker-group">
+        <h3>Nasıl hissettirsin?</h3>
+        <div class="chip-group" id="showMoodChips" role="group" aria-label="Ruh hali seçimi"></div>
+      </div>
+      <div class="picker-group filter-row">
+        <div>
+          <h3>Yapım</h3>
+          <div class="chip-group" id="showOriginChips" role="group" aria-label="Yapım kaynağı"></div>
+        </div>
+        <div>
+          <h3>Biçim</h3>
+          <div class="chip-group" id="showTypeChips" role="group" aria-label="Dizi veya film"></div>
+        </div>
+        <div>
+          <h3>Yoğunluk</h3>
+          <div class="chip-group" id="showIntensityChips" role="group" aria-label="Yoğunluk seçimi"></div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" id="showRandom" class="btn btn-secondary">🎲 Rastgele öner</button>
+        <button type="button" id="showClearFilters" class="btn btn-ghost btn-small">Filtreleri temizle</button>
+        <span id="showResultCount" class="muted result-count"></span>
+      </div>
+    </div>
+
+    <div id="showResults" class="results-grid" aria-live="polite"></div>
+  </section>
+
+  <!-- ---- Kütüphanem ---- -->
+  <section id="panel-library" class="tab-panel" role="tabpanel" aria-labelledby="tab-library" hidden>
+
+    <section class="library-section" aria-labelledby="watchedHeading">
+      <h2 id="watchedHeading">📺 İzlediklerim</h2>
+      <p id="watchedSummary" class="muted"></p>
+      <p id="watchedEmpty" class="muted">
+        Henüz izlediğin bir yapım işaretlenmemiş. <strong>Dizi &amp; Film</strong> sekmesinden
+        beğendiklerine "İzledim" dediğinde burada birikir ve sana benzerlerini önermeye başlarım.
+      </p>
+      <div id="watchedResults" class="results-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="library-section" id="similarSection" aria-labelledby="similarHeading" hidden>
+      <h2 id="similarHeading">✨ Bunları izledin — bir de şunlara bak</h2>
+      <p class="muted">İzleme geçmişine göre seçildi.</p>
+      <div id="similarResults" class="results-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="library-section" aria-labelledby="watchlistHeading">
+      <h2 id="watchlistHeading">🔖 İzleme listem</h2>
+      <p id="watchlistEmpty" class="muted">Sonra izlemek üzere kaydettiğin dizi/filmler burada görünür.</p>
+      <div id="watchlistResults" class="results-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="library-section" aria-labelledby="savedHeading">
+      <h2 id="savedHeading">💚 Kaydettiğim öneriler</h2>
+      <p id="savedEmpty" class="muted">Henüz kaydedilen bir öneri yok. Önerilerdeki 🤍 ikonuna tıklayarak buraya ekleyebilirsin.</p>
+      <div id="savedResults" class="results-grid" aria-live="polite"></div>
+    </section>
+
   </section>
 
   <details class="tips-section">

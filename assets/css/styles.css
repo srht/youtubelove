@@ -325,7 +325,7 @@ h2, h3 {
 /* ---- Results grid / cards ---- */
 .results-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
   margin-top: 8px;
 }
@@ -403,6 +403,14 @@ h2, h3 {
   border-radius: 10px;
   padding: 10px 14px;
   font-weight: 600;
+  white-space: nowrap;
+}
+.show-card .watch-link {
+  font-size: 0.9rem;
+  padding: 9px 10px;
+}
+.show-card .watched-toggle {
+  white-space: nowrap;
 }
 .watch-link:hover {
   background: var(--primary-hover);
@@ -437,6 +445,58 @@ h2, h3 {
 .quiz-summary {
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+/* ---- Dizi & Film ---- */
+.panel-intro {
+  margin: 0 0 20px;
+  font-size: 0.95rem;
+}
+.filter-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+.result-count {
+  font-size: 0.85rem;
+}
+.show-card.is-watched {
+  border-color: var(--primary);
+}
+.watched-toggle[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-contrast);
+  font-weight: 600;
+}
+.reason-note {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+.tag.intensity-agir {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* ---- Kütüphanem ---- */
+.library-section {
+  margin-bottom: 34px;
+}
+.library-section h2 {
+  font-size: 1.15rem;
+  margin-bottom: 4px;
+}
+.library-section > .muted {
+  margin: 0 0 12px;
 }
 
 /* ---- Tips ---- */

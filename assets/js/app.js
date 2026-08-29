@@ -3,12 +3,33 @@ import { buildSearchUrlForItem } from "./youtube.js";
 import { recommend, listByCategory, getDailyPick, getItemById } from "./recommend.js";
 import { QUIZ_QUESTIONS, answersToProfile, summarizeProfile } from "./quiz.js";
 import {
+  SHOW_ERAS,
+  SHOW_GENRES,
+  SHOW_MOODS,
+  SHOW_ORIGINS,
+  SHOW_TYPES,
+  SHOW_INTENSITIES,
+} from "./shows.js";
+import {
+  filterShows,
+  similarToWatched,
+  watchedStats,
+  getShowById,
+} from "./showRecommend.js";
+import { buildSearchUrl } from "./youtube.js";
+import {
   isSaved,
   toggleSaved,
   getSavedIds,
   pushRecentIds,
   getQuizProfile,
   saveQuizProfile,
+  isWatched,
+  toggleWatched,
+  getWatchedIds,
+  isShowSaved,
+  toggleSavedShow,
+  getSavedShowIds,
 } from "./storage.js";
 
 const TIMER_MINUTES = { kisa: 8, orta: 20, uzun: 45 };
@@ -109,7 +130,7 @@ function renderResults(container, items) {
 // Sekmeler
 // ---------------------------------------------------------------------------
 
-const TAB_IDS = ["quick", "quiz", "categories", "saved"];
+const TAB_IDS = ["quick", "quiz", "categories", "shows", "library"];
 
 function switchTab(tabId) {
   TAB_IDS.forEach((id) => {
@@ -120,7 +141,7 @@ function switchTab(tabId) {
     tabBtn.tabIndex = active ? 0 : -1;
     panel.hidden = !active;
   });
-  if (tabId === "saved") renderSavedTab();
+  if (tabId === "library") renderLibraryTab();
 }
 
 function initTabs() {
@@ -461,25 +482,222 @@ function initCategoriesTab() {
 }
 
 // ---------------------------------------------------------------------------
-// Kaydedilenler sekmesi
+// Dizi & Film sekmesi
 // ---------------------------------------------------------------------------
 
-function updateSavedCount() {
-  const count = getSavedIds().length;
-  const badge = document.getElementById("savedCount");
+const showFilters = { era: null, genre: null, mood: null, origin: null, type: null, intensity: null };
+
+const INTENSITY_LABEL = Object.fromEntries(SHOW_INTENSITIES.map((i) => [i.id, i.label]));
+
+function labelOf(list, id) {
+  return list.find((x) => x.id === id)?.label ?? id;
+}
+
+/** Dizi/film kartı. `note` verilirse "neden önerildi" satırı gösterilir. */
+function renderShowCard(show, note = null) {
+  const url = buildSearchUrl(show.queryTr);
+  const watched = isWatched(show.id);
+  const savedShow = isShowSaved(show.id);
+
+  const watchedBtn = el("button", {
+    class: "btn btn-secondary btn-small watched-toggle",
+    type: "button",
+    "aria-pressed": String(watched),
+    text: watched ? "✅ İzledim" : "＋ İzledim",
+    onclick: () => {
+      toggleWatched(show.id);
+      updateLibraryCount();
+      refreshShowResults();
+      if (!document.getElementById("panel-library").hidden) renderLibraryTab();
+    },
+  });
+
+  const saveShowBtn = el("button", {
+    class: "save-btn",
+    type: "button",
+    "aria-pressed": String(savedShow),
+    "aria-label": savedShow ? "İzleme listesinden çıkar" : "İzleme listeme ekle",
+    text: savedShow ? "🔖" : "📑",
+    onclick: () => {
+      const nowSaved = toggleSavedShow(show.id);
+      saveShowBtn.setAttribute("aria-pressed", String(nowSaved));
+      saveShowBtn.textContent = nowSaved ? "🔖" : "📑";
+      saveShowBtn.setAttribute("aria-label", nowSaved ? "İzleme listesinden çıkar" : "İzleme listeme ekle");
+      updateLibraryCount();
+      if (!document.getElementById("panel-library").hidden) renderLibraryTab();
+    },
+  });
+
+  const tags = [
+    el("span", { class: "tag", text: show.yearLabel }),
+    el("span", { class: "tag", text: labelOf(SHOW_TYPES, show.type) }),
+    ...show.genres.slice(0, 2).map((g) => el("span", { class: "tag", text: labelOf(SHOW_GENRES, g) })),
+    el("span", { class: `tag intensity-${show.intensity}`, text: INTENSITY_LABEL[show.intensity] }),
+  ];
+
+  return el("article", { class: `card show-card${watched ? " is-watched" : ""}` }, [
+    note ? el("p", { class: "reason-note", text: `✨ ${note}` }) : null,
+    el("div", { class: "card-top" }, [
+      el("h4", { text: show.title }),
+      saveShowBtn,
+    ]),
+    el("p", { text: show.description }),
+    el("p", { class: "why", text: show.why }),
+    el("div", { class: "card-tags" }, tags),
+    el("div", { class: "card-actions" }, [
+      el("a", {
+        class: "watch-link",
+        href: url,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        text: "YouTube'da Ara ↗",
+      }),
+      watchedBtn,
+    ]),
+  ]);
+}
+
+function renderShowChipGroup(containerId, options, filterKey) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  options.forEach((opt) => {
+    const selected = showFilters[filterKey] === opt.id;
+    container.appendChild(
+      el("button", {
+        class: "chip",
+        type: "button",
+        "aria-pressed": String(selected),
+        text: opt.emoji ? `${opt.emoji} ${opt.label}` : opt.label,
+        onclick: () => {
+          showFilters[filterKey] = selected ? null : opt.id;
+          renderAllShowChips();
+          refreshShowResults();
+        },
+      })
+    );
+  });
+}
+
+function renderAllShowChips() {
+  renderShowChipGroup("showEraChips", SHOW_ERAS, "era");
+  renderShowChipGroup("showGenreChips", SHOW_GENRES, "genre");
+  renderShowChipGroup("showMoodChips", SHOW_MOODS, "mood");
+  renderShowChipGroup("showOriginChips", SHOW_ORIGINS, "origin");
+  renderShowChipGroup("showTypeChips", SHOW_TYPES, "type");
+  renderShowChipGroup("showIntensityChips", SHOW_INTENSITIES, "intensity");
+}
+
+function refreshShowResults(customList = null) {
+  const container = document.getElementById("showResults");
+  const results = customList ?? filterShows(showFilters);
+
+  document.getElementById("showResultCount").textContent =
+    customList ? "" : `${results.length} yapım`;
+
+  container.innerHTML = "";
+  if (results.length === 0) {
+    container.appendChild(
+      el("p", { class: "muted", text: "Bu filtrelerle eşleşen yapım yok. Bir filtreyi kaldırıp tekrar dene." })
+    );
+    return;
+  }
+  results.forEach((show) => container.appendChild(renderShowCard(show)));
+}
+
+function initShowsTab() {
+  renderAllShowChips();
+  refreshShowResults();
+
+  document.getElementById("showClearFilters").addEventListener("click", () => {
+    Object.keys(showFilters).forEach((k) => {
+      showFilters[k] = null;
+    });
+    renderAllShowChips();
+    refreshShowResults();
+  });
+
+  document.getElementById("showRandom").addEventListener("click", () => {
+    const pool = filterShows(showFilters).filter((s) => !isWatched(s.id));
+    const source = pool.length > 0 ? pool : filterShows(showFilters);
+    if (source.length === 0) {
+      refreshShowResults();
+      return;
+    }
+    const pick = source[Math.floor(Math.random() * source.length)];
+    refreshShowResults([pick]);
+    document.getElementById("showResultCount").textContent = "Rastgele seçildi";
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Kütüphanem sekmesi
+// ---------------------------------------------------------------------------
+
+function updateLibraryCount() {
+  const count = getWatchedIds().length + getSavedShowIds().length + getSavedIds().length;
+  const badge = document.getElementById("libraryCount");
   badge.textContent = String(count);
   badge.hidden = count === 0;
 }
 
-function renderSavedTab() {
-  const ids = getSavedIds();
-  const items = ids.map((id) => getItemById(id)).filter(Boolean);
-  const container = document.getElementById("savedResults");
-  const emptyMsg = document.getElementById("savedEmpty");
+/** Geriye dönük uyumluluk: öneri kartındaki kaydet düğmesi bunu çağırıyor. */
+function updateSavedCount() {
+  updateLibraryCount();
+}
 
-  emptyMsg.hidden = items.length > 0;
+function renderWatchedSection() {
+  const watchedIds = getWatchedIds();
+  const shows = watchedIds.map(getShowById).filter(Boolean);
+  const container = document.getElementById("watchedResults");
+  const emptyMsg = document.getElementById("watchedEmpty");
+  const summary = document.getElementById("watchedSummary");
+
+  emptyMsg.hidden = shows.length > 0;
+  container.innerHTML = "";
+  shows.forEach((show) => container.appendChild(renderShowCard(show)));
+
+  const stats = watchedStats(watchedIds);
+  if (!stats) {
+    summary.textContent = "";
+    return;
+  }
+  const parts = [`${stats.total} yapım işaretledin`];
+  if (stats.diziCount && stats.filmCount) parts.push(`${stats.diziCount} dizi, ${stats.filmCount} film`);
+  if (stats.topGenre) parts.push(`en çok ${labelOf(SHOW_GENRES, stats.topGenre).toLowerCase()} izliyorsun`);
+  summary.textContent = `${parts.join(" · ")}.`;
+}
+
+function renderSimilarSection() {
+  const section = document.getElementById("similarSection");
+  const container = document.getElementById("similarResults");
+  const suggestions = similarToWatched(getWatchedIds(), { limit: 6 });
+
+  section.hidden = suggestions.length === 0;
+  container.innerHTML = "";
+  suggestions.forEach(({ show, reason }) => container.appendChild(renderShowCard(show, reason)));
+}
+
+function renderWatchlistSection() {
+  const shows = getSavedShowIds().map(getShowById).filter(Boolean);
+  const container = document.getElementById("watchlistResults");
+  document.getElementById("watchlistEmpty").hidden = shows.length > 0;
+  container.innerHTML = "";
+  shows.forEach((show) => container.appendChild(renderShowCard(show)));
+}
+
+function renderSavedSuggestionsSection() {
+  const items = getSavedIds().map((id) => getItemById(id)).filter(Boolean);
+  const container = document.getElementById("savedResults");
+  document.getElementById("savedEmpty").hidden = items.length > 0;
   container.innerHTML = "";
   items.forEach((item) => container.appendChild(renderCard(item)));
+}
+
+function renderLibraryTab() {
+  renderWatchedSection();
+  renderSimilarSection();
+  renderWatchlistSection();
+  renderSavedSuggestionsSection();
 }
 
 // ---------------------------------------------------------------------------
@@ -494,7 +712,8 @@ function init() {
   initQuickTab();
   initQuizTab();
   initCategoriesTab();
-  updateSavedCount();
+  initShowsTab();
+  updateLibraryCount();
 
   const previousProfile = getQuizProfile();
   if (previousProfile) {
