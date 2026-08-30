@@ -45,6 +45,8 @@ import {
   getSavedShowIds,
   getSortOrder,
   setSortOrder,
+  getTheme,
+  setTheme,
 } from "./storage.js";
 
 const TIMER_MINUTES = { kisa: 8, orta: 20, uzun: 45 };
@@ -267,6 +269,43 @@ function renderIntentDuration() {
       },
     });
     container.appendChild(btn);
+  });
+}
+
+const THEMES = [
+  { id: "system", label: "Sistem", emoji: "🖥️" },
+  { id: "light", label: "Açık", emoji: "☀️" },
+  { id: "dark", label: "Koyu", emoji: "🌙" },
+];
+
+/** Seçili temayı belgeye uygular; "system" işaretlemeyi kaldırıp sisteme bırakır. */
+function applyTheme(theme) {
+  if (theme === "light" || theme === "dark") {
+    document.documentElement.dataset.theme = theme;
+  } else {
+    delete document.documentElement.dataset.theme;
+  }
+}
+
+function renderThemeSwitch() {
+  const container = document.getElementById("themeSwitch");
+  container.innerHTML = "";
+  const current = getTheme();
+  THEMES.forEach((theme) => {
+    container.appendChild(
+      el("button", {
+        class: "theme-option",
+        type: "button",
+        "aria-pressed": String(current === theme.id),
+        title: `${theme.label} tema`,
+        text: `${theme.emoji} ${theme.label}`,
+        onclick: () => {
+          setTheme(theme.id);
+          applyTheme(theme.id);
+          renderThemeSwitch();
+        },
+      })
+    );
   });
 }
 
@@ -1688,6 +1727,8 @@ function initSettingsTab() {
 // ---------------------------------------------------------------------------
 
 function init() {
+  applyTheme(getTheme());
+  renderThemeSwitch();
   renderIntentDuration();
   renderSortChips();
   initTimer();

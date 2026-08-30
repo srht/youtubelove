@@ -17,8 +17,9 @@
   --focus-ring: 0 0 0 3px rgba(47, 143, 91, 0.35);
 }
 
+/* Sistem koyu tema — kullanıcı açıkça "açık" seçmediyse geçerli. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #10140f;
     --bg-elevated: #1a2019;
     --text: #e7f0e9;
@@ -35,6 +36,28 @@
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   }
 }
+
+/* Kullanıcı açıkça koyu seçtiyse, sistem ne derse desin. */
+:root[data-theme="dark"] {
+    --bg: #10140f;
+    --bg-elevated: #1a2019;
+    --text: #e7f0e9;
+    --text-muted: #9fb3a5;
+    --border: #2a352b;
+    --primary: #4cb37c;
+    --primary-hover: #5fc98f;
+    --primary-contrast: #08120c;
+    --accent: #1c2c22;
+    --chip-bg: #202b21;
+    --chip-selected-bg: #4cb37c;
+    --chip-selected-text: #08120c;
+    --danger: #e07a6c;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Form denetimleri ve kaydırma çubukları da seçilen temaya uysun. */
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
 
 * {
   box-sizing: border-box;
@@ -776,6 +799,45 @@ h2, h3 {
 .suggest-item:hover,
 .suggest-item.is-active {
   background: var(--accent);
+}
+
+/* ---- Tema seçici ---- */
+.theme-switch {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 3px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.theme-option {
+  font: inherit;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.theme-option:hover {
+  color: var(--text);
+}
+.theme-option[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-weight: 600;
+}
+.theme-option:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /* ---- Menü grup başlıkları ---- */

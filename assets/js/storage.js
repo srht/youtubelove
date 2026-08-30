@@ -135,7 +135,16 @@ export function toggleSavedShow(showId) {
 
 // ---- Genel tercihler (dil vb.) ----
 export function getPrefs() {
-  return { useEnglish: false, sort: "views", ...readJson(KEYS.PREFS, {}) };
+  return { useEnglish: false, sort: "views", theme: "system", ...readJson(KEYS.PREFS, {}) };
+}
+
+/** Görünüm teması: "system" | "light" | "dark". */
+export function getTheme() {
+  return getPrefs().theme;
+}
+
+export function setTheme(theme) {
+  savePrefs({ ...getPrefs(), theme });
 }
 
 /** Arama sonuçlarının sıralaması (varsayılan: en çok izlenen). */

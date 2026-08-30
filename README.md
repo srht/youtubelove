@@ -48,7 +48,11 @@ bağlantı verebilir veya yer imine ekleyebilirsin.
   videolarına götürür. Menüden “İlgili” veya “En yeni” sıralamasına geçebilirsin.
 - **Niyet kartı ve zamanlayıcı** — menünün altında sabit durur: YouTube'a girmeden önce ne kadar
   vakit ayıracağını seç, isteğe bağlı bir geri sayım başlat. Seçtiğin süre önerileri de filtreler.
-- Açık/koyu tema, mobil uyumlu, klavye ile tam erişilebilir arayüz (menüde yön tuşlarıyla gezinme).
+- **Tema seçimi** — menünün üstündeki 🖥️ Sistem / ☀️ Açık / 🌙 Koyu anahtarı. Varsayılan
+  “Sistem”dir (işletim sisteminin ayarını izler); açık ya da koyu seçersen sistem ne derse desin
+  o geçerli olur ve tercih tarayıcında saklanır. Sayfa açılırken tema, stil hesaplanmadan önce
+  uygulanır; bu yüzden yanlış temanın kısa süre görünüp değişmesi (yanıp sönme) yaşanmaz.
+- Mobil uyumlu, klavye ile tam erişilebilir arayüz (menüde yön tuşlarıyla gezinme).
 
 ## Hafıza nasıl çalışıyor?
 
