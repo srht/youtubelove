@@ -84,7 +84,15 @@ sonuçlarını silmez.
 - Desteklenen servisler: **Anthropic (Claude)**, **OpenAI**, **Google Gemini**.
 - Model adı elle düzenlenebilir — model kimlikleri zamanla değişir. **Bağlantıyı test et**
   düğmesiyle ayarlarını tek tıkla doğrulayabilirsin.
-- LLM çağrısı otomatik yapılmaz; yalnızca düğmeye bastığında çalışır (istekler ücretlidir).
+- **Her aramaya ekle:** Her LLM çubuğundaki (ve Ayarlar'daki) **“Her aramada otomatik”**
+  anahtarını açarsan, o bölümde yaptığın her arama sonucuna LLM önerileri de kendiliğinden
+  eklenir — ayrıca düğmeye basman gerekmez. Anahtar tek bir ayardır; bir yerde değiştirince
+  bütün bölümlerde aynı olur ve tarayıcında saklanır.
+- **Varsayılan kapalıdır** ve istekler ücretli olduğu için boşa çağrı yapılmaz:
+  - Arka arkaya filtre değiştirirken istekler beklemeye alınır (yaklaşık 1 sn), dört hızlı
+    tıklama tek çağrıya iner.
+  - Bağlam değişmediyse (aynı arama tekrar) yeni istek gönderilmez.
+  - **“🤖 LLM ile öner”** düğmesi bu kısıtları atlar; aynı aramada bile yeniden üretir.
 - Çağrı başarısız olursa o bölümde hata mesajı gösterilir; bölümün kendi (yerel) önerileri
   yerinde kalır, silinmez.
 

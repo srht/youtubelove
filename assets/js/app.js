@@ -23,6 +23,7 @@ import { recordEvent, clearMemory, getEvents } from "./memory.js";
 import { personalizedPicks, memorySummary } from "./personalize.js";
 import {
   PROVIDERS, getProvider, getLlmConfig, saveLlmConfig, clearApiKey, isLlmReady, maskKey,
+  isAutoSuggest,
 } from "./llmSettings.js";
 import { generateLlmSuggestions, testConnection } from "./llm.js";
 import {
@@ -372,6 +373,8 @@ function renderForYou() {
     );
   }
 
+  maybeAutoRun("foryou");
+
   if (isStarter) {
     container.prepend(
       el("p", {
@@ -421,22 +424,34 @@ function renderLlmCard(suggestion) {
  * @param {{buttonId:string, resultsId:string, focus:"video"|"show"|"any",
  *          buildContext:()=>string, avoid?:()=>string[]}} options
  */
-function setupLlmSection({ buttonId, resultsId, focus, buildContext, avoid }) {
+/** Bölüm anahtarı -> { runNow, autoRun } — otomatik tetikleme için kayıt defteri. */
+const llmRunners = new Map();
+
+function setupLlmSection({ key, buttonId, resultsId, focus, buildContext, avoid }) {
   const button = document.getElementById(buttonId);
   if (!button) return;
 
-  button.addEventListener("click", async () => {
+  // Aynı arama için tekrar tekrar ücretli istek atılmasın.
+  let lastContext = null;
+  let inFlight = false;
+
+  async function run({ auto = false } = {}) {
+    if (!isLlmReady() || inFlight) return;
+
+    // Bölümün kendi bağlamı + genel zevk profili birlikte gönderilir.
+    const context = [buildContext(), memorySummary()].filter(Boolean).join("\n");
+    if (auto && context === lastContext) return;
+    lastContext = context;
+
     const container = document.getElementById(resultsId);
     const original = button.textContent;
-
+    inFlight = true;
     button.disabled = true;
     button.textContent = "🤖 Düşünüyor…";
     container.innerHTML = "";
     container.appendChild(el("p", { class: "muted", text: "Yapay zekâdan öneriler isteniyor…" }));
 
     try {
-      // Bölümün kendi bağlamı + genel zevk profili birlikte gönderilir.
-      const context = [buildContext(), memorySummary()].filter(Boolean).join("\n");
       const suggestions = await generateLlmSuggestions(context, {
         count: getLlmConfig().count,
         avoid: avoid ? avoid() : [],
@@ -461,6 +476,8 @@ function setupLlmSection({ buttonId, resultsId, focus, buildContext, avoid }) {
         "llm"
       );
     } catch (error) {
+      // Otomatik denemede bağlamı serbest bırak ki kullanıcı elle tekrar deneyebilsin.
+      lastContext = null;
       container.innerHTML = "";
       container.appendChild(
         el("p", {
@@ -469,10 +486,52 @@ function setupLlmSection({ buttonId, resultsId, focus, buildContext, avoid }) {
         })
       );
     } finally {
+      inFlight = false;
       button.disabled = false;
       button.textContent = original;
     }
+  }
+
+  button.addEventListener("click", () => {
+    lastContext = null; // elle basıldıysa aynı bağlam olsa da yeniden üret
+    run();
   });
+
+  llmRunners.set(key, {
+    runNow: run,
+    // Filtre tıklamalarında arka arkaya istek gitmesin diye beklemeli.
+    autoRun: debounce(() => run({ auto: true }), 900),
+  });
+}
+
+/**
+ * "Her aramada otomatik" açıksa, o bölümün LLM önerilerini de getirir.
+ * Kapalıysa hiçbir şey yapmaz — istekler ücretli olduğu için varsayılan kapalıdır.
+ */
+function maybeAutoRun(key) {
+  if (!isAutoSuggest()) return;
+  llmRunners.get(key)?.autoRun();
+}
+
+/** Her LLM çubuğuna "her aramada otomatik" anahtarını ekler. */
+function attachAutoToggle(bar) {
+  const input = el("input", { type: "checkbox", class: "llm-auto-input" });
+  input.checked = isAutoSuggest();
+  input.addEventListener("change", () => {
+    saveLlmConfig({ autoSuggest: input.checked });
+    syncAutoToggles();
+  });
+  bar.appendChild(el("label", { class: "llm-auto" }, [input, el("span", { text: "Her aramada otomatik" })]));
+}
+
+/** Anahtarlar birden çok yerde olduğu için hepsini aynı değere çeker. */
+function syncAutoToggles() {
+  const on = getLlmConfig().autoSuggest;
+  document.querySelectorAll(".llm-auto-input").forEach((input) => {
+    input.checked = on;
+  });
+  const settingsToggle = document.getElementById("llmAuto");
+  if (settingsToggle) settingsToggle.checked = on;
 }
 
 /** Kart başlıklarını "şunları önerme" listesi olarak toplar. */
@@ -497,6 +556,7 @@ function refreshLlmAvailability() {
 function initLlmSections() {
   // Sana Özel — hafıza profili
   setupLlmSection({
+    key: "foryou",
     buttonId: "foryouLlm",
     resultsId: "foryouResults",
     focus: "any",
@@ -506,6 +566,7 @@ function initLlmSections() {
 
   // Hızlı Seçim — seçili ruh hali + hedef
   setupLlmSection({
+    key: "quick",
     buttonId: "quickLlm",
     resultsId: "quickLlmResults",
     focus: "video",
@@ -524,6 +585,7 @@ function initLlmSections() {
 
   // Kısa Test — test cevapları
   setupLlmSection({
+    key: "quiz",
     buttonId: "quizLlm",
     resultsId: "quizLlmResults",
     focus: "video",
@@ -546,6 +608,7 @@ function initLlmSections() {
 
   // Kategoriler — seçili kategori
   setupLlmSection({
+    key: "category",
     buttonId: "categoryLlm",
     resultsId: "categoryLlmResults",
     focus: "video",
@@ -560,6 +623,7 @@ function initLlmSections() {
 
   // Dizi & Film — seçili filtreler
   setupLlmSection({
+    key: "show",
     buttonId: "showLlm",
     resultsId: "showLlmResults",
     focus: "show",
@@ -589,6 +653,7 @@ function initLlmSections() {
 
   // Kütüphane — izlediklerine benzer
   setupLlmSection({
+    key: "similar",
     buttonId: "similarLlm",
     resultsId: "similarLlmResults",
     focus: "show",
@@ -603,6 +668,9 @@ function initLlmSections() {
       ...titlesIn("similarResults"),
     ],
   });
+
+  document.querySelectorAll(".llm-bar").forEach(attachAutoToggle);
+  syncAutoToggles();
 }
 
 function initForYouTab() {
@@ -691,6 +759,7 @@ function initQuickTab() {
     };
     const results = recommend(profile);
     renderResults(document.getElementById("quickResults"), results, "quick");
+    maybeAutoRun("quick");
   });
 }
 
@@ -773,6 +842,7 @@ function finishQuiz() {
   const profile = answersToProfile(state.quiz.answers);
   const results = recommend(profile);
   renderResults(document.getElementById("quizResults"), results, "quiz");
+  maybeAutoRun("quiz");
 }
 
 function resetQuiz() {
@@ -845,6 +915,7 @@ function initCategoriesTab() {
     }
     const items = listByCategory(selectedCategory, { duration: state.intentDuration });
     renderResults(container, items, "category");
+    maybeAutoRun("category");
   }
 
   render();
@@ -1000,6 +1071,7 @@ function refreshShowResults(customList = null) {
     return;
   }
   results.forEach((show) => container.appendChild(renderShowCard(show)));
+  maybeAutoRun("show");
 }
 
 // ---------------------------------------------------------------------------
@@ -1271,6 +1343,7 @@ function renderSimilarSection() {
 
   container.innerHTML = "";
   suggestions.forEach(({ show, reason }) => container.appendChild(renderShowCard(show, reason)));
+  maybeAutoRun("similar");
   recordRecommendations(
     suggestions.map(({ show }) => ({ kind: "show", id: show.id })),
     "similar"
@@ -1380,6 +1453,7 @@ function syncLlmFormFromConfig() {
   const provider = getProvider(config.provider);
 
   document.getElementById("llmEnabled").checked = config.enabled;
+  document.getElementById("llmAuto").checked = config.autoSuggest;
   document.getElementById("llmProvider").value = config.provider;
   document.getElementById("llmModel").value = config.model;
   document.getElementById("llmModel").placeholder = provider.defaultModel;
@@ -1430,6 +1504,7 @@ function initSettingsTab() {
 
     const patch = {
       enabled,
+      autoSuggest: document.getElementById("llmAuto").checked,
       provider: providerSelect.value,
       model: document.getElementById("llmModel").value.trim(),
       count: Math.min(12, Math.max(3, Number(document.getElementById("llmCount").value) || 6)),
@@ -1439,6 +1514,7 @@ function initSettingsTab() {
 
     saveLlmConfig(patch);
     syncLlmFormFromConfig();
+    syncAutoToggles();
     setLlmStatus("Ayarlar kaydedildi ✅", "success");
   });
 

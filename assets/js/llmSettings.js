@@ -42,6 +42,8 @@ const DEFAULTS = {
   apiKey: "",
   model: "",
   count: 6,
+  // Açıkken her arama sonucuna LLM önerileri de otomatik eklenir.
+  autoSuggest: false,
 };
 
 function read() {
@@ -90,6 +92,11 @@ export function clearApiKey() {
 /** LLM önerileri kullanılabilir mi? (açık + anahtar girilmiş) */
 export function isLlmReady(config = getLlmConfig()) {
   return Boolean(config.enabled && config.apiKey && config.apiKey.trim());
+}
+
+/** Her aramada LLM önerisi de istensin mi? */
+export function isAutoSuggest(config = getLlmConfig()) {
+  return Boolean(config.autoSuggest) && isLlmReady(config);
 }
 
 /** Anahtarı arayüzde göstermek için maskeler: sk-ant-…4f2a */

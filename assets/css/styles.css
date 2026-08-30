@@ -788,7 +788,21 @@ h2, h3 {
   border-radius: 12px;
 }
 .llm-bar-hint {
+  flex: 1;
   font-size: 0.85rem;
+}
+.llm-auto {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.checkbox-field small {
+  display: block;
+  font-weight: 400;
+  margin-top: 3px;
 }
 
 /* ---- Geçmiş öneriler ---- */
