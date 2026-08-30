@@ -299,6 +299,9 @@ h2, h3 {
   margin: 0 0 3px;
   font-size: 0.92rem;
 }
+.tool-title-spaced {
+  margin-top: 14px;
+}
 .tool-help {
   margin: 0 0 10px;
   font-size: 0.78rem;

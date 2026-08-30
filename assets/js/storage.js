@@ -135,7 +135,16 @@ export function toggleSavedShow(showId) {
 
 // ---- Genel tercihler (dil vb.) ----
 export function getPrefs() {
-  return readJson(KEYS.PREFS, { useEnglish: false });
+  return { useEnglish: false, sort: "views", ...readJson(KEYS.PREFS, {}) };
+}
+
+/** Arama sonuçlarının sıralaması (varsayılan: en çok izlenen). */
+export function getSortOrder() {
+  return getPrefs().sort;
+}
+
+export function setSortOrder(sort) {
+  savePrefs({ ...getPrefs(), sort });
 }
 
 export function savePrefs(prefs) {

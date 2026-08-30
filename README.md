@@ -38,6 +38,9 @@ bağlantı verebilir veya yer imine ekleyebilirsin.
 - **Ayarlar (LLM)** — istersen bir yapay zekâ servisi (Anthropic / OpenAI / Google Gemini)
   tanımlayıp önerileri modelden de alabilirsin. Anahtar tanımlı değilken site tamamen
   kendi motoruyla, aynen eskisi gibi çalışır.
+- **En çok izlenenler** — üretilen bütün YouTube arama bağlantıları varsayılan olarak
+  **izlenme sayısına göre** sıralanır, yani öneriler seni o konunun en çok izlenen
+  videolarına götürür. Menüden “İlgili” veya “En yeni” sıralamasına geçebilirsin.
 - **Niyet kartı ve zamanlayıcı** — menünün altında sabit durur: YouTube'a girmeden önce ne kadar
   vakit ayıracağını seç, isteğe bağlı bir geri sayım başlat. Seçtiğin süre önerileri de filtreler.
 - Açık/koyu tema, mobil uyumlu, klavye ile tam erişilebilir arayüz (menüde yön tuşlarıyla gezinme).
@@ -118,6 +121,28 @@ Buna karşılık:
 Kod: sağlayıcı ayarları `assets/js/llmSettings.js`, HTTP adaptörleri `assets/js/llm.js`.
 Proje build adımı olmayan saf tarayıcı JS'i olduğu ve üç sağlayıcı desteklendiği için resmî
 SDK'lar yerine doğrudan `fetch` kullanılır.
+
+## Arama sıralaması
+
+Sol menüdeki **“Aramaları neye göre sırala?”** seçimi, sitenin ürettiği her YouTube
+bağlantısına uygulanır. Varsayılan **🔥 En çok izlenen**'dir.
+
+Bu, YouTube'un `sp` arama parametresiyle yapılır. `sp`, base64'lenmiş küçük bir
+protobuf'tur:
+
+```
+alan 1 (varint)          = sıralama  (0 ilgili, 1 puan, 2 tarih, 3 izlenme)
+alan 2 { alan 3 varint } = süre      (1 kısa, 2 uzun, 3 orta)
+```
+
+`assets/js/youtube.js` bu yapıyı kodlar; böylece sıralama ve süre birlikte
+kullanılabilir (ör. *en çok izlenen* + *kısa* → `CAMSAhgB`) ve elle hazırlanmış bir
+token tablosu tutmak gerekmez. Parametre YouTube tarafından resmî olarak belgelenmiş
+değildir; değişirse `USE_SEARCH_FILTERS = false` ile tek yerden kapatılabilir — arama
+yine çalışır, yalnızca sıralama/süre tercihi uygulanmaz.
+
+LLM'den öneri istenirken de modele "çok izlenmiş, tanınmış içerikleri tercih et"
+talimatı verilir.
 
 ## Yerel çalıştırma
 

@@ -322,6 +322,8 @@ Kurallar:
 - Her öge şu alanlara sahip olsun:
   {"title": "kısa başlık", "query": "youtube arama metni", "why": "neden bu kişiye uygun (tek cümle)", "kind": "video" | "dizi" | "film"}
 - "query" gerçekten YouTube'da aratıldığında sonuç verecek, doğal bir arama metni olsun.
+- Çok izlenmiş, tanınmış içerikleri tercih et; niş veya bulunması zor şeyler önerme.
+  Sonuçlar izlenme sayısına göre sıralanacağı için arama metni yeterince genel olsun.
 - Türkçe içerik ağırlıklı olsun; uygun düştüğünde yabancı yapımlar da olabilir.
 - Çeşitlilik olsun: hepsi aynı konuda olmasın.
 - Tıbbi tavsiye verme, tanı koyma. Sansasyonel veya kaygı artırıcı içerik önerme.

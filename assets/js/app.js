@@ -1,5 +1,5 @@
 import { CATEGORIES, MOODS, GOALS, DURATIONS } from "./data.js";
-import { buildSearchUrlForItem } from "./youtube.js";
+import { buildSearchUrlForItem, SORT_ORDERS } from "./youtube.js";
 import { recommend, listByCategory, getItemById } from "./recommend.js";
 import { QUIZ_QUESTIONS, answersToProfile, summarizeProfile } from "./quiz.js";
 import {
@@ -43,6 +43,8 @@ import {
   isShowSaved,
   toggleSavedShow,
   getSavedShowIds,
+  getSortOrder,
+  setSortOrder,
 } from "./storage.js";
 
 const TIMER_MINUTES = { kisa: 8, orta: 20, uzun: 45 };
@@ -87,7 +89,10 @@ function categoryLabel(id) {
 // ---------------------------------------------------------------------------
 
 function renderCard(item) {
-  const url = buildSearchUrlForItem(item, { duration: state.intentDuration ?? item.duration });
+  const url = buildSearchUrlForItem(item, {
+    duration: state.intentDuration ?? item.duration,
+    sort: getSortOrder(),
+  });
 
   const saveBtn = el("button", {
     class: "save-btn",
@@ -265,6 +270,34 @@ function renderIntentDuration() {
   });
 }
 
+function renderSortChips() {
+  const container = document.getElementById("sortOrder");
+  container.innerHTML = "";
+  const current = getSortOrder();
+  SORT_ORDERS.forEach((option) => {
+    container.appendChild(
+      el("button", {
+        class: "chip",
+        type: "button",
+        "aria-pressed": String(current === option.id),
+        text: `${option.emoji} ${option.label}`,
+        onclick: () => {
+          setSortOrder(option.id);
+          renderSortChips();
+          // Görünen bağlantılar anında yeni sıralamayı kullansın.
+          refreshVisibleLinks();
+        },
+      })
+    );
+  });
+}
+
+/** Sıralama değişince ekrandaki YouTube bağlantılarını yeniden kur. */
+function refreshVisibleLinks() {
+  refreshShowResults();
+  if (!document.getElementById("panel-library").hidden) renderLibraryTab();
+}
+
 function formatSeconds(totalSeconds) {
   const m = Math.floor(totalSeconds / 60)
     .toString()
@@ -394,7 +427,7 @@ function addForYouCard(container, pick) {
 
 /** LLM kartı: modelin ürettiği başlık/sorgu/gerekçe. */
 function renderLlmCard(suggestion) {
-  const url = buildSearchUrl(suggestion.query);
+  const url = buildSearchUrl(suggestion.query, { sort: getSortOrder() });
   const kindLabel = { video: "Video", dizi: "Dizi", film: "Film" }[suggestion.kind] ?? "Video";
 
   return el("article", { class: "card llm-card" }, [
@@ -936,7 +969,7 @@ function labelOf(list, id) {
 
 /** Dizi/film kartı. `note` verilirse "neden önerildi" satırı gösterilir. */
 function renderShowCard(show, note = null) {
-  const url = buildSearchUrl(show.queryTr);
+  const url = buildSearchUrl(show.queryTr, { sort: getSortOrder() });
   const watched = isWatched(show.id);
   const savedShow = isShowSaved(show.id);
 
@@ -1559,6 +1592,7 @@ function initSettingsTab() {
 
 function init() {
   renderIntentDuration();
+  renderSortChips();
   initTimer();
   initTabs();
   initQuickTab();
