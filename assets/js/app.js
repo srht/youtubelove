@@ -372,6 +372,9 @@ function renderMemoryStatus() {
     summaryEl.hidden = false;
   }
 
+  // Hafıza boşken kullanıcıyı üretken bölümlere yönlendir.
+  renderStartCards(!summary && document.getElementById("foryouResults").childElementCount === 0);
+
   const bits = [];
   if (eventCount > 0) bits.push(`${eventCount} hareket`);
   if (watchedCount > 0) bits.push(`${watchedCount} izlenen yapım`);
@@ -407,6 +410,12 @@ function renderForYou() {
   }
 
   maybeAutoRun("foryou");
+  renderStartCards(false);
+  renderNextStep("foryouNext", "Önerileri daha da isabetli yapmak için:", [
+    { id: "quiz", text: "Kısa Test'i doldur" },
+    { id: "shows", text: "İzlediklerini işaretle" },
+  ]);
+  document.getElementById("foryouNext").hidden = false;
 
   if (isStarter) {
     container.prepend(
@@ -457,6 +466,88 @@ function renderLlmCard(suggestion) {
  * @param {{buttonId:string, resultsId:string, focus:"video"|"show"|"any",
  *          buildContext:()=>string, avoid?:()=>string[]}} options
  */
+const TAB_META = {
+  foryou: { icon: "✨", label: "Sana Özel" },
+  quick: { icon: "⚡", label: "Hızlı Seçim" },
+  quiz: { icon: "📝", label: "Kısa Test" },
+  categories: { icon: "🗂️", label: "Kategoriler" },
+  shows: { icon: "🎬", label: "Dizi & Film" },
+  library: { icon: "📚", label: "Kütüphanem" },
+  tips: { icon: "💡", label: "İpuçları" },
+  settings: { icon: "⚙️", label: "Ayarlar" },
+};
+
+/** data-goto taşıyan her düğme, adı geçen bölüme götürür. */
+function initGotoLinks() {
+  document.addEventListener("click", (event) => {
+    const trigger = event.target.closest("[data-goto]");
+    if (!trigger) return;
+    const target = trigger.dataset.goto;
+    if (TAB_IDS.includes(target)) switchTab(target);
+  });
+}
+
+/** Bölüm sonuna "şuraya da bakabilirsin" bağlantıları koyar. */
+function renderNextStep(containerId, intro, targets) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = "";
+  container.appendChild(el("span", { class: "muted next-step-intro", text: intro }));
+  targets.forEach((target) => {
+    const meta = TAB_META[target.id];
+    container.appendChild(
+      el("button", {
+        class: "btn btn-secondary btn-small",
+        type: "button",
+        "data-goto": target.id,
+        text: `${meta.icon} ${target.text ?? meta.label} →`,
+      })
+    );
+  });
+}
+
+function initNextSteps() {
+  renderNextStep("quickNext", "Yeterince isabetli değil mi?", [
+    { id: "quiz", text: "Kısa Test'le daha iyi tanıyayım" },
+    { id: "shows", text: "Dizi/film arıyorum" },
+  ]);
+  renderNextStep("quizNext", "Başka nereye bakabilirsin:", [
+    { id: "categories" },
+    { id: "shows" },
+  ]);
+  renderNextStep("categoryNext", "Başka nereye bakabilirsin:", [
+    { id: "quick" },
+    { id: "shows" },
+  ]);
+  renderNextStep("showNext", "İzlediklerini işaretledikçe öneriler kişiselleşir:", [
+    { id: "library", text: "Kütüphaneme bak" },
+  ]);
+}
+
+/** Hafıza boşken Sana Özel'de nereden başlanacağını gösteren kartlar. */
+const START_CARDS = [
+  { goto: "quick", icon: "⚡", title: "Nasıl hissediyorsun?", text: "Ruh halini ve hedefini seç, iki tıkla öneri al." },
+  { goto: "quiz", icon: "📝", title: "Beni tanı", text: "Beş soruluk test, önerileri sana göre ayarlasın." },
+  { goto: "shows", icon: "🎬", title: "Eski bir dizi bul", text: "Aklına gelmeyen klasikleri hatırlatan katalog." },
+];
+
+function renderStartCards(show) {
+  const container = document.getElementById("foryouStart");
+  container.hidden = !show;
+  if (!show) return;
+
+  container.innerHTML = "";
+  START_CARDS.forEach((card) => {
+    container.appendChild(
+      el("button", { class: "start-card", type: "button", "data-goto": card.goto }, [
+        el("span", { class: "start-icon", "aria-hidden": "true", text: card.icon }),
+        el("span", { class: "start-title", text: card.title }),
+        el("span", { class: "start-text", text: card.text }),
+      ])
+    );
+  });
+}
+
 /** Bölüm anahtarı -> { runNow, autoRun } — otomatik tetikleme için kayıt defteri. */
 const llmRunners = new Map();
 
@@ -546,15 +637,18 @@ function maybeAutoRun(key) {
   llmRunners.get(key)?.autoRun();
 }
 
-/** Her LLM çubuğuna "her aramada otomatik" anahtarını ekler. */
+/** "Her aramada otomatik" anahtarını, yalnızca LLM kuruluyken görünen bölüme ekler. */
 function attachAutoToggle(bar) {
+  const target = bar.querySelector(".llm-bar-ready") ?? bar;
   const input = el("input", { type: "checkbox", class: "llm-auto-input" });
   input.checked = isAutoSuggest();
   input.addEventListener("change", () => {
     saveLlmConfig({ autoSuggest: input.checked });
     syncAutoToggles();
   });
-  bar.appendChild(el("label", { class: "llm-auto" }, [input, el("span", { text: "Her aramada otomatik" })]));
+  target.appendChild(
+    el("label", { class: "llm-auto" }, [input, el("span", { text: "Her aramada otomatik" })])
+  );
 }
 
 /** Anahtarlar birden çok yerde olduğu için hepsini aynı değere çeker. */
@@ -581,8 +675,11 @@ function refreshLlmAvailability() {
   const ready = isLlmReady();
   document.getElementById("foryouLlm").hidden = !ready;
   document.getElementById("llmBadge").hidden = !ready;
+
+  // Kurulu değilse çubuk gizlenmez; nereden kurulacağını gösteren ipucu kalır.
   document.querySelectorAll(".llm-bar").forEach((bar) => {
-    bar.hidden = !ready;
+    bar.querySelector(".llm-bar-ready").hidden = !ready;
+    bar.querySelector(".llm-bar-setup").hidden = ready;
   });
 }
 
@@ -1595,6 +1692,8 @@ function init() {
   renderSortChips();
   initTimer();
   initTabs();
+  initGotoLinks();
+  initNextSteps();
   initQuickTab();
   initQuizTab();
   initCategoriesTab();

@@ -30,6 +30,7 @@
     </div>
 
     <nav class="menu" role="tablist" aria-orientation="vertical" aria-label="Bölümler">
+      <p class="menu-group-title">Öneri al</p>
       <button type="button" class="menu-item" id="tab-foryou" role="tab" aria-selected="true" aria-controls="panel-foryou">
         <span class="menu-icon" aria-hidden="true">✨</span><span class="menu-label">Sana Özel</span>
       </button>
@@ -42,6 +43,7 @@
       <button type="button" class="menu-item" id="tab-categories" role="tab" aria-selected="false" aria-controls="panel-categories" tabindex="-1">
         <span class="menu-icon" aria-hidden="true">🗂️</span><span class="menu-label">Kategoriler</span>
       </button>
+      <p class="menu-group-title">Keşfet</p>
       <button type="button" class="menu-item" id="tab-shows" role="tab" aria-selected="false" aria-controls="panel-shows" tabindex="-1">
         <span class="menu-icon" aria-hidden="true">🎬</span><span class="menu-label">Dizi &amp; Film</span>
       </button>
@@ -49,6 +51,7 @@
         <span class="menu-icon" aria-hidden="true">📚</span><span class="menu-label">Kütüphanem</span>
         <span id="libraryCount" class="badge" hidden>0</span>
       </button>
+      <p class="menu-group-title">Yardım &amp; ayar</p>
       <button type="button" class="menu-item" id="tab-tips" role="tab" aria-selected="false" aria-controls="panel-tips" tabindex="-1">
         <span class="menu-icon" aria-hidden="true">💡</span><span class="menu-label">İpuçları</span>
       </button>
@@ -59,6 +62,7 @@
     </nav>
 
     <section class="sidebar-tool" aria-label="İzleme niyeti ve zamanlayıcı">
+      <p class="tool-scope">Aşağıdaki iki ayar <strong>bütün önerilere</strong> uygulanır.</p>
       <h2 class="tool-title">Bu sefer kaç dakika?</h2>
       <p class="tool-help">Süreni seç, öneriler ona göre filtrelensin.</p>
       <div class="chip-group chip-group-sm" id="intentDuration" role="group" aria-label="Süre seçimi"></div>
@@ -97,7 +101,9 @@
       </div>
     </div>
 
+    <div id="foryouStart" class="start-grid" hidden></div>
     <div id="foryouResults" class="results-grid" aria-live="polite"></div>
+    <div class="next-step" id="foryouNext" hidden></div>
   </section>
 
   <!-- ---- Hızlı Seçim ---- -->
@@ -117,12 +123,19 @@
       </div>
       <button type="button" id="quickSubmit" class="btn btn-primary btn-large" disabled>Önerileri Getir</button>
     </div>
-    <div class="llm-bar" id="quickLlmBar" hidden>
-      <button type="button" id="quickLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
-      <span class="muted llm-bar-hint">Seçtiğin ruh hali ve hedefe göre yapay zekâdan öneri al.</span>
+    <div class="llm-bar" id="quickLlmBar">
+      <div class="llm-bar-ready" hidden>
+        <button type="button" id="quickLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
+        <span class="muted llm-bar-hint">Seçtiğin ruh hali ve hedefe göre yapay zekâdan öneri al.</span>
+      </div>
+      <p class="llm-bar-setup muted">
+        🤖 Yapay zekâdan da öneri alabilirsin.
+        <button type="button" class="link-btn" data-goto="settings">Ayarlar'dan bir servis tanımla →</button>
+      </p>
     </div>
     <div id="quickLlmResults" class="results-grid" aria-live="polite"></div>
     <div id="quickResults" class="results-grid" aria-live="polite"></div>
+    <div class="next-step" id="quickNext"></div>
   </section>
 
   <!-- ---- Kısa Test ---- -->
@@ -144,12 +157,19 @@
     <div id="quizResultWrap" hidden>
       <p id="quizSummary" class="quiz-summary"></p>
       <button type="button" id="quizRestart" class="btn btn-ghost btn-small">Testi baştan başlat</button>
-      <div class="llm-bar" id="quizLlmBar" hidden>
+      <div class="llm-bar" id="quizLlmBar">
+      <div class="llm-bar-ready" hidden>
         <button type="button" id="quizLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
         <span class="muted llm-bar-hint">Test profiline göre yapay zekâdan öneri al.</span>
       </div>
+      <p class="llm-bar-setup muted">
+        🤖 Yapay zekâdan da öneri alabilirsin.
+        <button type="button" class="link-btn" data-goto="settings">Ayarlar'dan bir servis tanımla →</button>
+      </p>
+    </div>
       <div id="quizLlmResults" class="results-grid" aria-live="polite"></div>
       <div id="quizResults" class="results-grid" aria-live="polite"></div>
+      <div class="next-step" id="quizNext"></div>
     </div>
   </section>
 
@@ -165,12 +185,19 @@
         <div class="chip-group" id="categoryChips" role="group" aria-label="Kategori seçimi"></div>
       </div>
     </div>
-    <div class="llm-bar" id="categoryLlmBar" hidden>
-      <button type="button" id="categoryLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
-      <span class="muted llm-bar-hint">Seçtiğin kategoride yapay zekâdan öneri al.</span>
+    <div class="llm-bar" id="categoryLlmBar">
+      <div class="llm-bar-ready" hidden>
+        <button type="button" id="categoryLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
+        <span class="muted llm-bar-hint">Seçtiğin kategoride yapay zekâdan öneri al.</span>
+      </div>
+      <p class="llm-bar-setup muted">
+        🤖 Yapay zekâdan da öneri alabilirsin.
+        <button type="button" class="link-btn" data-goto="settings">Ayarlar'dan bir servis tanımla →</button>
+      </p>
     </div>
     <div id="categoryLlmResults" class="results-grid" aria-live="polite"></div>
     <div id="categoryResults" class="results-grid" aria-live="polite"></div>
+    <div class="next-step" id="categoryNext"></div>
   </section>
 
   <!-- ---- Dizi & Film ---- -->
@@ -292,12 +319,19 @@
       </div>
     </div>
 
-    <div class="llm-bar" id="showLlmBar" hidden>
-      <button type="button" id="showLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
-      <span class="muted llm-bar-hint">Seçtiğin filtrelere göre yapay zekâdan dizi/film önerisi al.</span>
+    <div class="llm-bar" id="showLlmBar">
+      <div class="llm-bar-ready" hidden>
+        <button type="button" id="showLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
+        <span class="muted llm-bar-hint">Seçtiğin filtrelere göre yapay zekâdan dizi/film önerisi al.</span>
+      </div>
+      <p class="llm-bar-setup muted">
+        🤖 Yapay zekâdan da öneri alabilirsin.
+        <button type="button" class="link-btn" data-goto="settings">Ayarlar'dan bir servis tanımla →</button>
+      </p>
     </div>
     <div id="showLlmResults" class="results-grid" aria-live="polite"></div>
     <div id="showResults" class="results-grid" aria-live="polite"></div>
+    <div class="next-step" id="showNext"></div>
   </section>
 
   <!-- ---- Kütüphanem ---- -->
@@ -313,6 +347,7 @@
       <p id="watchedEmpty" class="muted">
         Henüz izlediğin bir yapım işaretlenmemiş. <strong>Dizi &amp; Film</strong> sekmesinden
         beğendiklerine "İzledim" dediğinde burada birikir ve sana benzerlerini önermeye başlarım.
+        <button type="button" class="link-btn" data-goto="shows">Dizi &amp; Film'e git →</button>
       </p>
       <div id="watchedResults" class="results-grid" aria-live="polite"></div>
     </section>
@@ -320,10 +355,16 @@
     <section class="library-section" id="similarSection" aria-labelledby="similarHeading" hidden>
       <h2 id="similarHeading">✨ Bunları izledin — bir de şunlara bak</h2>
       <p id="similarIntro" class="muted">İzleme geçmişine göre seçildi.</p>
-      <div class="llm-bar" id="similarLlmBar" hidden>
+      <div class="llm-bar" id="similarLlmBar">
+      <div class="llm-bar-ready" hidden>
         <button type="button" id="similarLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
         <span class="muted llm-bar-hint">İzlediklerine göre yapay zekâdan dizi/film önerisi al.</span>
       </div>
+      <p class="llm-bar-setup muted">
+        🤖 Yapay zekâdan da öneri alabilirsin.
+        <button type="button" class="link-btn" data-goto="settings">Ayarlar'dan bir servis tanımla →</button>
+      </p>
+    </div>
       <div id="similarLlmResults" class="results-grid" aria-live="polite"></div>
       <div id="similarResults" class="results-grid" aria-live="polite"></div>
     </section>
@@ -350,7 +391,9 @@
 
     <section class="library-section" aria-labelledby="savedHeading">
       <h2 id="savedHeading">💚 Kaydettiğim öneriler</h2>
-      <p id="savedEmpty" class="muted">Henüz kaydedilen bir öneri yok. Önerilerdeki 🤍 ikonuna tıklayarak buraya ekleyebilirsin.</p>
+      <p id="savedEmpty" class="muted">Henüz kaydedilen bir öneri yok. Önerilerdeki 🤍 ikonuna tıklayarak buraya ekleyebilirsin.
+        <button type="button" class="link-btn" data-goto="foryou">Sana Özel'e git →</button>
+      </p>
       <div id="savedResults" class="results-grid" aria-live="polite"></div>
     </section>
 

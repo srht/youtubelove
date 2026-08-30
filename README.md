@@ -7,6 +7,11 @@ seni doğrudan YouTube'un arama sonuçlarına yönlendirir — algoritmanın se�
 API anahtarı, backend veya build adımı gerektirmez. Hiçbir veri toplanmaz; tercihlerin yalnızca
 kendi tarayıcında (`localStorage`) tutulur.
 
+Menü üç gruba ayrılmıştır: **Öneri al** (Sana Özel, Hızlı Seçim, Kısa Test, Kategoriler),
+**Keşfet** (Dizi & Film, Kütüphanem) ve **Yardım & ayar** (İpuçları, Ayarlar). İlk açılışta
+Sana Özel bölümü nereden başlanacağını gösteren üç kart sunar, her bölümün sonunda "şuraya da
+bakabilirsin" bağlantıları vardır ve boş listeler ilgili bölüme yönlendirir.
+
 Bütün işlevler tek bir sayfada, soldaki menüden erişilen bölümler hâlinde toplanmıştır
 (mobilde ☰ düğmesiyle açılan çekmece menü). Her bölümün kendi adresi vardır
 (`#foryou`, `#quick`, `#quiz`, `#categories`, `#shows`, `#library`, `#tips`, `#settings`), böylece doğrudan
@@ -66,8 +71,12 @@ Her şey yalnızca senin tarayıcında (`localStorage`) durur; hiçbir yere gön
 
 ## LLM önerileri (isteğe bağlı)
 
-**Ayarlar** bölümünden bir servis seçip API anahtarı girersen, **her bölümde**
-**“🤖 LLM ile öner”** düğmesi belirir. Model, YouTube'da aratılacak yeni öneriler üretir;
+Her bölümde bir LLM çubuğu vardır. Servis **tanımlı değilken** çubuk gizlenmez; bunun yerine
+*“🤖 Yapay zekâdan da öneri alabilirsin — Ayarlar'dan bir servis tanımla →”* yazıp doğrudan
+Ayarlar'a götürür. Böylece seçeneğin varlığı ayarlara girmeden de görünür.
+
+**Ayarlar** bölümünden bir servis seçip API anahtarı girersen, aynı çubuk
+**“🤖 LLM ile öner”** düğmesine ve “Her aramada otomatik” anahtarına dönüşür. Model, YouTube'da aratılacak yeni öneriler üretir;
 her kart neden önerildiğini yazar.
 
 Her bölüm modele kendi bağlamını verir — üstüne genel zevk profilin de eklenir:
