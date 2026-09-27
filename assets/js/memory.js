@@ -13,15 +13,14 @@ const HALF_LIFE_DAYS = 30;
 
 /** Hareket türlerinin ham ağırlıkları — niyeti ne kadar güçlü gösterdiğine göre. */
 export const EVENT_WEIGHTS = {
-  show_watched: 4,        // "izledim" demek en güçlü sinyal
-  suggestion_saved: 3,
-  show_saved: 2.5,
-  suggestion_opened: 2,
-  show_opened: 2,
+  item_watched: 4,        // "izledim" demek en güçlü sinyal
+  item_saved: 3,
+  item_opened: 2,
   quiz_answer: 1.5,
   mood_selected: 1,
   goal_selected: 1,
   category_browsed: 0.5,
+  show_filter: 0.5,
 };
 
 const memoryFallback = new Map();
@@ -63,6 +62,9 @@ export function recordEvent(type, payload = {}) {
   if (payload.id) event.id = payload.id;
   if (payload.key) event.k = payload.key;
   if (payload.value) event.v = payload.value;
+  // Öneriler sabit bir katalogdan gelmediği için hafıza başlığı ve kategoriyi de tutar.
+  if (payload.title) event.title = String(payload.title).slice(0, 120);
+  if (payload.category) event.c = String(payload.category).slice(0, 60);
 
   const events = read();
   events.push(event);

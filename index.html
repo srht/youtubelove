@@ -67,7 +67,6 @@
       </button>
       <button type="button" class="menu-item" id="tab-settings" role="tab" aria-selected="false" aria-controls="panel-settings" tabindex="-1">
         <span class="menu-icon" aria-hidden="true">⚙️</span><span class="menu-label">Ayarlar</span>
-        <span id="llmBadge" class="badge badge-soft" hidden>LLM</span>
       </button>
     </nav>
 
@@ -96,7 +95,7 @@
   <section id="panel-foryou" class="tab-panel" role="tabpanel" aria-labelledby="tab-foryou">
     <div class="panel-head">
       <h2>✨ Sana Özel</h2>
-      <p class="muted">Seçimlerinden ve izlediklerinden öğrenip her seferinde yeniden derliyorum.</p>
+      <p class="muted">Yapay zekâ, seçimlerinden ve izlediklerinden öğrendiklerine göre her seferinde yeni öneriler üretir.</p>
     </div>
 
     <div class="foryou-bar">
@@ -109,9 +108,8 @@
         </label>
       </div>
       <div class="foryou-actions">
-        <button type="button" id="foryouGenerate" class="btn btn-primary btn-large">Önerileri göster</button>
+        <button type="button" id="foryouGenerate" class="btn btn-primary btn-large">✨ Önerileri göster</button>
         <button type="button" id="luckyBtn" class="btn btn-secondary btn-large">🎲 Şansımı dene</button>
-        <button type="button" id="foryouLlm" class="btn btn-secondary btn-large" hidden>🤖 LLM ile öner</button>
         <button type="button" id="memoryReset" class="btn btn-ghost btn-small">Hafızayı sıfırla</button>
       </div>
     </div>
@@ -126,7 +124,7 @@
   <section id="panel-quick" class="tab-panel" role="tabpanel" aria-labelledby="tab-quick" hidden>
     <div class="panel-head">
       <h2>⚡ Hızlı Seçim</h2>
-      <p class="muted">Nasıl hissettiğini ve ne istediğini seç; sana uygun aramaları getireyim.</p>
+      <p class="muted">Nasıl hissettiğini ve ne istediğini seç; yapay zekâ sana uygun içerikleri bulsun.</p>
     </div>
     <div class="picker">
       <div class="picker-group">
@@ -137,19 +135,8 @@
         <h3>Hedefin</h3>
         <div class="chip-group" id="quickGoals" role="group" aria-label="Hedef seçimi"></div>
       </div>
-      <button type="button" id="quickSubmit" class="btn btn-primary btn-large" disabled>Önerileri Getir</button>
+      <button type="button" id="quickSubmit" class="btn btn-primary btn-large" disabled>✨ Önerileri getir</button>
     </div>
-    <div class="llm-bar" id="quickLlmBar">
-      <div class="llm-bar-ready" hidden>
-        <button type="button" id="quickLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
-        <span class="muted llm-bar-hint">Seçtiğin ruh hali ve hedefe göre yapay zekâdan öneri al.</span>
-      </div>
-      <p class="llm-bar-setup muted">
-        🤖 Yapay zekâdan da öneri alabilirsin.
-        <button type="button" class="link-btn" data-goto="settings">Ayarlar'dan bir servis tanımla →</button>
-      </p>
-    </div>
-    <div id="quickLlmResults" class="results-grid" aria-live="polite"></div>
     <div id="quickResults" class="results-grid" aria-live="polite"></div>
     <div class="next-step" id="quickNext"></div>
   </section>
@@ -158,7 +145,7 @@
   <section id="panel-quiz" class="tab-panel" role="tabpanel" aria-labelledby="tab-quiz" hidden>
     <div class="panel-head">
       <h2>📝 Kısa Test</h2>
-      <p class="muted">Beş soruda profilini çıkarayım, önerileri ona göre seçeyim.</p>
+      <p class="muted">Beş soruda profilini çıkarayım, yapay zekâ önerileri ona göre üretsin.</p>
     </div>
     <div id="quizContainer">
       <div class="quiz-progress">
@@ -172,20 +159,12 @@
     </div>
     <div id="quizResultWrap" hidden>
       <p id="quizSummary" class="quiz-summary"></p>
-      <button type="button" id="quizRestart" class="btn btn-ghost btn-small">Testi baştan başlat</button>
-      <div class="llm-bar" id="quizLlmBar">
-      <div class="llm-bar-ready" hidden>
-        <button type="button" id="quizLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
-        <span class="muted llm-bar-hint">Test profiline göre yapay zekâdan öneri al.</span>
+      <div class="result-actions">
+        <button type="button" id="quizMore" class="btn btn-secondary btn-small">✨ Başka öneriler</button>
+        <button type="button" id="quizRestart" class="btn btn-ghost btn-small">Testi baştan başlat</button>
       </div>
-      <p class="llm-bar-setup muted">
-        🤖 Yapay zekâdan da öneri alabilirsin.
-        <button type="button" class="link-btn" data-goto="settings">Ayarlar'dan bir servis tanımla →</button>
-      </p>
-    </div>
-      <div id="quizLlmResults" class="results-grid" aria-live="polite"></div>
       <div id="quizResults" class="results-grid" aria-live="polite"></div>
-      <div class="next-step" id="quizNext"></div>
+      <div class="next-step" id="quizNextStep"></div>
     </div>
   </section>
 
@@ -193,7 +172,7 @@
   <section id="panel-categories" class="tab-panel" role="tabpanel" aria-labelledby="tab-categories" hidden>
     <div class="panel-head">
       <h2>🗂️ Kategoriler</h2>
-      <p class="muted">Aklında bir alan varsa doğrudan oradan göz at.</p>
+      <p class="muted">Bir alan seç; yapay zekâ o alanda ilginç ve çok izlenen içerikleri getirsin.</p>
     </div>
     <div class="picker">
       <div class="picker-group">
@@ -201,17 +180,6 @@
         <div class="chip-group" id="categoryChips" role="group" aria-label="Kategori seçimi"></div>
       </div>
     </div>
-    <div class="llm-bar" id="categoryLlmBar">
-      <div class="llm-bar-ready" hidden>
-        <button type="button" id="categoryLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
-        <span class="muted llm-bar-hint">Seçtiğin kategoride yapay zekâdan öneri al.</span>
-      </div>
-      <p class="llm-bar-setup muted">
-        🤖 Yapay zekâdan da öneri alabilirsin.
-        <button type="button" class="link-btn" data-goto="settings">Ayarlar'dan bir servis tanımla →</button>
-      </p>
-    </div>
-    <div id="categoryLlmResults" class="results-grid" aria-live="polite"></div>
     <div id="categoryResults" class="results-grid" aria-live="polite"></div>
     <div class="next-step" id="categoryNext"></div>
   </section>
@@ -220,11 +188,44 @@
   <section id="panel-shows" class="tab-panel" role="tabpanel" aria-labelledby="tab-shows" hidden>
     <div class="panel-head">
       <h2>🎬 Dizi &amp; Film</h2>
+      <p class="muted">Aklına gelmeyen dizi ve filmleri yapay zekâ hatırlatsın. İstediğin kadar filtre seç, sonra öneri iste.</p>
     </div>
-    <p class="muted panel-intro">
-      Aklına gelmeyen eski dizi ve filmleri hatırlatan bir katalog. Dönem, tür veya ruh haline göre filtrele;
-      izlediklerini işaretledikçe kütüphanen benzerlerini önermeye başlar.
-    </p>
+
+    <div class="picker">
+      <div class="picker-group">
+        <h3>Dönem</h3>
+        <div class="chip-group" id="showEraChips" role="group" aria-label="Dönem seçimi"></div>
+      </div>
+      <div class="picker-group">
+        <h3>Tür</h3>
+        <div class="chip-group" id="showGenreChips" role="group" aria-label="Tür seçimi"></div>
+      </div>
+      <div class="picker-group">
+        <h3>Nasıl hissettirsin?</h3>
+        <div class="chip-group" id="showMoodChips" role="group" aria-label="Ruh hali seçimi"></div>
+      </div>
+      <div class="picker-group filter-row">
+        <div>
+          <h3>Yapım</h3>
+          <div class="chip-group" id="showOriginChips" role="group" aria-label="Yapım kaynağı"></div>
+        </div>
+        <div>
+          <h3>Biçim</h3>
+          <div class="chip-group" id="showTypeChips" role="group" aria-label="Dizi veya film"></div>
+        </div>
+        <div>
+          <h3>Yoğunluk</h3>
+          <div class="chip-group" id="showIntensityChips" role="group" aria-label="Yoğunluk seçimi"></div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" id="showSubmit" class="btn btn-primary">✨ Dizi/film öner</button>
+        <button type="button" id="showRandom" class="btn btn-secondary">🎲 Rastgele bir tane</button>
+        <button type="button" id="showClearFilters" class="btn btn-ghost btn-small">Filtreleri temizle</button>
+      </div>
+    </div>
+
+    <div id="showResults" class="results-grid" aria-live="polite"></div>
 
     <details class="add-form-wrap" id="addShowDetails">
       <summary>➕ Kendi dizini / filmini ekle</summary>
@@ -301,52 +302,6 @@
       </form>
     </details>
 
-    <div class="picker">
-      <div class="picker-group">
-        <h3>Dönem</h3>
-        <div class="chip-group" id="showEraChips" role="group" aria-label="Dönem seçimi"></div>
-      </div>
-      <div class="picker-group">
-        <h3>Tür</h3>
-        <div class="chip-group" id="showGenreChips" role="group" aria-label="Tür seçimi"></div>
-      </div>
-      <div class="picker-group">
-        <h3>Nasıl hissettirsin?</h3>
-        <div class="chip-group" id="showMoodChips" role="group" aria-label="Ruh hali seçimi"></div>
-      </div>
-      <div class="picker-group filter-row">
-        <div>
-          <h3>Yapım</h3>
-          <div class="chip-group" id="showOriginChips" role="group" aria-label="Yapım kaynağı"></div>
-        </div>
-        <div>
-          <h3>Biçim</h3>
-          <div class="chip-group" id="showTypeChips" role="group" aria-label="Dizi veya film"></div>
-        </div>
-        <div>
-          <h3>Yoğunluk</h3>
-          <div class="chip-group" id="showIntensityChips" role="group" aria-label="Yoğunluk seçimi"></div>
-        </div>
-      </div>
-      <div class="filter-actions">
-        <button type="button" id="showRandom" class="btn btn-secondary">🎲 Rastgele öner</button>
-        <button type="button" id="showClearFilters" class="btn btn-ghost btn-small">Filtreleri temizle</button>
-        <span id="showResultCount" class="muted result-count"></span>
-      </div>
-    </div>
-
-    <div class="llm-bar" id="showLlmBar">
-      <div class="llm-bar-ready" hidden>
-        <button type="button" id="showLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
-        <span class="muted llm-bar-hint">Seçtiğin filtrelere göre yapay zekâdan dizi/film önerisi al.</span>
-      </div>
-      <p class="llm-bar-setup muted">
-        🤖 Yapay zekâdan da öneri alabilirsin.
-        <button type="button" class="link-btn" data-goto="settings">Ayarlar'dan bir servis tanımla →</button>
-      </p>
-    </div>
-    <div id="showLlmResults" class="results-grid" aria-live="polite"></div>
-    <div id="showResults" class="results-grid" aria-live="polite"></div>
     <div class="next-step" id="showNext"></div>
   </section>
 
@@ -354,41 +309,36 @@
   <section id="panel-library" class="tab-panel" role="tabpanel" aria-labelledby="tab-library" hidden>
     <div class="panel-head">
       <h2>📚 Kütüphanem</h2>
-      <p class="muted">İzlediklerin, izleme listen ve kaydettiğin öneriler tek yerde.</p>
+      <p class="muted">İzlediklerin, kaydettiklerin ve sana yapılan bütün öneriler tek yerde.</p>
     </div>
 
     <section class="library-section" aria-labelledby="watchedHeading">
-      <h2 id="watchedHeading">📺 İzlediklerim</h2>
+      <h2 id="watchedHeading">✅ İzlediklerim</h2>
       <p id="watchedSummary" class="muted"></p>
       <p id="watchedEmpty" class="muted">
-        Henüz izlediğin bir yapım işaretlenmemiş. <strong>Dizi &amp; Film</strong> sekmesinden
-        beğendiklerine "İzledim" dediğinde burada birikir ve sana benzerlerini önermeye başlarım.
+        Henüz “İzledim” dediğin bir şey yok. Önerilerdeki <strong>✅ İzledim</strong> düğmesine bastıkça
+        burada birikir ve yapay zekâ sana benzerlerini önerebilir.
         <button type="button" class="link-btn" data-goto="shows">Dizi &amp; Film'e git →</button>
       </p>
       <div id="watchedResults" class="results-grid" aria-live="polite"></div>
     </section>
 
-    <section class="library-section" id="similarSection" aria-labelledby="similarHeading" hidden>
-      <h2 id="similarHeading">✨ Bunları izledin — bir de şunlara bak</h2>
-      <p id="similarIntro" class="muted">İzleme geçmişine göre seçildi.</p>
-      <div class="llm-bar" id="similarLlmBar">
-      <div class="llm-bar-ready" hidden>
-        <button type="button" id="similarLlm" class="btn btn-secondary">🤖 LLM ile öner</button>
-        <span class="muted llm-bar-hint">İzlediklerine göre yapay zekâdan dizi/film önerisi al.</span>
+    <section class="library-section" aria-labelledby="similarHeading">
+      <div class="section-head">
+        <h2 id="similarHeading">✨ Bunlara benzer ne var?</h2>
+        <button type="button" id="similarBtn" class="btn btn-primary btn-small">Benzerlerini öner</button>
       </div>
-      <p class="llm-bar-setup muted">
-        🤖 Yapay zekâdan da öneri alabilirsin.
-        <button type="button" class="link-btn" data-goto="settings">Ayarlar'dan bir servis tanımla →</button>
-      </p>
-    </div>
-      <div id="similarLlmResults" class="results-grid" aria-live="polite"></div>
+      <p id="similarIntro" class="muted">İzlediklerini ve kaydettiklerini yapay zekâya verip benzerlerini buldururum.</p>
       <div id="similarResults" class="results-grid" aria-live="polite"></div>
     </section>
 
-    <section class="library-section" aria-labelledby="watchlistHeading">
-      <h2 id="watchlistHeading">🔖 İzleme listem</h2>
-      <p id="watchlistEmpty" class="muted">Sonra izlemek üzere kaydettiğin dizi/filmler burada görünür.</p>
-      <div id="watchlistResults" class="results-grid" aria-live="polite"></div>
+    <section class="library-section" aria-labelledby="savedHeading">
+      <h2 id="savedHeading">💚 Kaydettiklerim</h2>
+      <p id="savedEmpty" class="muted">
+        Sonra izlemek istediklerini 💚 ile kaydet; burada dururlar.
+        <button type="button" class="link-btn" data-goto="foryou">Sana Özel'e git →</button>
+      </p>
+      <div id="savedResults" class="results-grid" aria-live="polite"></div>
     </section>
 
     <section class="library-section" aria-labelledby="historyHeading">
@@ -396,23 +346,10 @@
         <h2 id="historyHeading">🕘 Geçmiş öneriler</h2>
         <button type="button" id="historyClear" class="btn btn-ghost btn-small" hidden>Geçmişi temizle</button>
       </div>
-      <p id="historyEmpty" class="muted">
-        Sana yapılan öneriler burada kategorilere ayrılmış olarak birikir.
-        <strong>Sana Özel</strong>, <strong>Hızlı Seçim</strong> veya <strong>Kısa Test</strong>
-        bölümlerinden bir öneri aldığında burada görünmeye başlar.
-      </p>
+      <p id="historyEmpty" class="muted">Sana yapılan öneriler burada kategorilere ayrılmış olarak birikir.</p>
       <p id="historySummary" class="muted"></p>
       <div id="historyGroups"></div>
     </section>
-
-    <section class="library-section" aria-labelledby="savedHeading">
-      <h2 id="savedHeading">💚 Kaydettiğim öneriler</h2>
-      <p id="savedEmpty" class="muted">Henüz kaydedilen bir öneri yok. Önerilerdeki 🤍 ikonuna tıklayarak buraya ekleyebilirsin.
-        <button type="button" class="link-btn" data-goto="foryou">Sana Özel'e git →</button>
-      </p>
-      <div id="savedResults" class="results-grid" aria-live="polite"></div>
-    </section>
-
   </section>
 
   <!-- ---- İpuçları ---- -->
@@ -435,66 +372,60 @@
   <section id="panel-settings" class="tab-panel" role="tabpanel" aria-labelledby="tab-settings" hidden>
     <div class="panel-head">
       <h2>⚙️ Ayarlar</h2>
-      <p class="muted">Bir yapay zekâ servisi tanımlarsan, öneriler o servisten de üretilebilir.</p>
+      <p class="muted">Öneriler varsayılan olarak sitenin kendi yapay zekâsından gelir; senden anahtar istenmez.</p>
     </div>
 
-    <div class="warning-box" role="note">
-      <strong>⚠️ API anahtarın hakkında</strong>
-      <p>
-        Anahtarın yalnızca <strong>senin tarayıcında</strong> (localStorage) saklanır; depoya,
-        bize veya başka bir sunucuya gönderilmez. İstekler tarayıcından doğrudan seçtiğin
-        servise gider. Ancak tarayıcına erişimi olan herkes anahtarı okuyabilir — bu yüzden
-        <strong>ortak kullanılan bir bilgisayarda anahtar girme</strong> ve mümkünse
-        harcama limiti tanımlı, sadece bu iş için üretilmiş bir anahtar kullan.
-      </p>
+    <div class="status-box" id="aiStatus">
+      <p class="status-line"><span id="aiStatusIcon">⏳</span> <span id="aiStatusText">Yapay zekâ servisi kontrol ediliyor…</span></p>
+      <p class="status-line"><span id="ytStatusIcon">⏳</span> <span id="ytStatusText">YouTube bağlantısı kontrol ediliyor…</span></p>
     </div>
 
-    <form id="llmForm" class="add-form" novalidate>
-      <label class="field checkbox-field" for="llmEnabled">
-        <input type="checkbox" id="llmEnabled" name="enabled" />
-        <span>LLM önerilerini etkinleştir</span>
+    <form id="countForm" class="add-form" novalidate>
+      <label class="field field-year" for="aiCount">
+        <span class="field-label">Her seferinde kaç öneri gelsin?</span>
+        <input type="number" id="aiCount" min="3" max="12" />
       </label>
-
-      <label class="field checkbox-field" for="llmAuto">
-        <input type="checkbox" id="llmAuto" name="autoSuggest" />
-        <span>Her aramaya LLM önerilerini de ekle
-          <small class="field-help">Açıkken her arama sonucuna yapay zekâ önerileri otomatik eklenir. Kapalıyken düğmeye basman gerekir. Her çağrı ücretlidir.</small>
-        </span>
-      </label>
-
-      <div class="form-row">
-        <label class="field" for="llmProvider">
-          <span class="field-label">Servis</span>
-          <select id="llmProvider" name="provider"></select>
-        </label>
-        <label class="field field-grow" for="llmModel">
-          <span class="field-label">Model</span>
-          <input type="text" id="llmModel" name="model" autocomplete="off" aria-describedby="llmModelHelp" />
-          <small id="llmModelHelp" class="field-help">Boş bırakırsan servisin varsayılanı kullanılır. Model adları zamanla değişebilir; gerekirse elle düzelt.</small>
-        </label>
-      </div>
-
-      <label class="field" for="llmKey">
-        <span class="field-label">API anahtarı</span>
-        <input type="password" id="llmKey" name="apiKey" autocomplete="off" spellcheck="false" aria-describedby="llmKeyHelp" />
-        <small id="llmKeyHelp" class="field-help">
-          <span id="llmKeyState"></span>
-          <a id="llmKeysLink" href="#" target="_blank" rel="noopener noreferrer">Anahtar nereden alınır?</a>
-        </small>
-      </label>
-
-      <label class="field field-year" for="llmCount">
-        <span class="field-label">Öneri sayısı</span>
-        <input type="number" id="llmCount" name="count" min="3" max="12" />
-      </label>
-
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Kaydet</button>
-        <button type="button" id="llmTest" class="btn btn-secondary">Bağlantıyı test et</button>
-        <button type="button" id="llmClear" class="btn btn-ghost btn-small">Anahtarı sil</button>
-        <p id="llmStatus" class="form-status" role="status"></p>
-      </div>
     </form>
+
+    <details class="add-form-wrap advanced">
+      <summary>🔧 Gelişmiş: kendi yapay zekâ anahtarımı kullan</summary>
+      <p class="muted">
+        Gerek yok — site kendi yapay zekâsıyla çalışır. Yalnızca sitenin sunucusu olmadan
+        (ör. bilgisayarında yerel olarak) çalıştırıyorsan ya da kendi hesabını kullanmak istiyorsan
+        buraya bir anahtar gir. Anahtar yalnızca bu tarayıcıda saklanır ve istekler tarayıcından
+        doğrudan seçtiğin servise gider; ortak bilgisayarda girme.
+      </p>
+      <form id="llmForm" class="add-form" novalidate>
+        <label class="field checkbox-field" for="llmEnabled">
+          <input type="checkbox" id="llmEnabled" name="enabled" />
+          <span>Sitenin servisine ulaşılamazsa kendi anahtarımı kullan</span>
+        </label>
+        <div class="form-row">
+          <label class="field" for="llmProvider">
+            <span class="field-label">Servis</span>
+            <select id="llmProvider" name="provider"></select>
+          </label>
+          <label class="field field-grow" for="llmModel">
+            <span class="field-label">Model</span>
+            <input type="text" id="llmModel" name="model" autocomplete="off" />
+          </label>
+        </div>
+        <label class="field" for="llmKey">
+          <span class="field-label">API anahtarı</span>
+          <input type="password" id="llmKey" name="apiKey" autocomplete="off" spellcheck="false" aria-describedby="llmKeyHelp" />
+          <small id="llmKeyHelp" class="field-help">
+            <span id="llmKeyState"></span>
+            <a id="llmKeysLink" href="#" target="_blank" rel="noopener noreferrer">Anahtar nereden alınır?</a>
+          </small>
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Kaydet</button>
+          <button type="button" id="llmTest" class="btn btn-secondary">Bağlantıyı test et</button>
+          <button type="button" id="llmClear" class="btn btn-ghost btn-small">Anahtarı sil</button>
+          <p id="llmStatus" class="form-status" role="status"></p>
+        </div>
+      </form>
+    </details>
   </section>
 
   </main>
@@ -503,7 +434,7 @@
 <footer class="site-footer">
   <div class="wrap">
     <p>Bu site tıbbi tavsiye vermez; kaygı, uyku veya ruh hali ile ilgili ciddi zorluklar yaşıyorsan bir uzmana danışmanı öneririz.</p>
-    <p class="muted">Veri toplanmaz, hesap gerekmez. Tercihlerin yalnızca tarayıcında (localStorage) saklanır.</p>
+    <p class="muted">Hesap gerekmez. Öneri isterken yaptığın seçimler (ruh hali, kategori, izlediğin yapımların adları) öneri üretmek için yapay zekâya gönderilir; sitenin kendisi bunları saklamaz. Kütüphanen ve tercihlerin yalnızca tarayıcında durur.</p>
   </div>
 </footer>
 

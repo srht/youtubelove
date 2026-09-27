@@ -1,0 +1,14 @@
+# Cloudflare Pages yapılandırması.
+# Pages, Git'ten dağıtırken bu dosyayı okur; dashboard'da ayrıca bir şey ayarlamaya gerek kalmaz.
+name = "youtubelove"                 # Cloudflare'deki Pages proje adıyla aynı olmalı
+pages_build_output_dir = "."
+compatibility_date = "2026-09-01"
+
+# Workers AI — /api/suggest önerileri buradan üretir. API anahtarı gerekmez.
+[ai]
+binding = "AI"
+
+# İsteğe bağlı gizli değişkenler (Cloudflare → Pages projesi → Settings → Variables and secrets):
+#   YOUTUBE_API_KEY    → önerilere YouTube'daki en çok izlenen gerçek videoyu ekler
+#   ANTHROPIC_API_KEY  → Workers AI yerine Claude kullanılır
+# Gizli değerler bu dosyaya YAZILMAZ.

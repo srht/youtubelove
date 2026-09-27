@@ -56,7 +56,7 @@ export function createThumb(show) {
   fallback.setAttribute("aria-hidden", "true");
   fallback.innerHTML =
     `<span class="thumb-initials">${initialsOf(show.title)}</span>` +
-    `<span class="thumb-kind">${show.type === "film" ? "🎬" : "📺"}</span>`;
+    `<span class="thumb-kind">${show.type === "film" ? "🎬" : show.type === "dizi" ? "📺" : "▶️"}</span>`;
   wrap.appendChild(fallback);
 
   if (show.videoId) {

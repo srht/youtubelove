@@ -1,164 +1,83 @@
 // Geçmişte yapılan önerilerin kaydı ve kategorilere ayrılması.
 //
-// Kullanıcıya gösterilen her öneri buraya düşer; Kütüphanem bölümünde
-// kategori başlıkları altında toplanır. Aynı öneri tekrar çıkarsa yeni satır
-// açılmaz, sayacı artar ve tarihi tazelenir.
+// Öneriler yapay zekâdan geldiği için her kayıt önerinin tamamını taşır.
+// Aynı öneri tekrar çıkarsa yeni satır açılmaz; sayacı artar, tarihi tazelenir.
 
-import { CATEGORIES } from "./data.js";
-import { SHOW_GENRES } from "./shows.js";
-import { getItemById } from "./recommend.js";
-import { getShowById } from "./showRecommend.js";
+import { readJson, writeJson } from "./storage.js";
 
-const KEY = "yl_rec_history_v1";
+const KEY = "yl_rec_history_v2";
 const MAX_ENTRIES = 250;
-const memoryFallback = new Map();
 
-/** Önerinin hangi ekrandan çıktığı — kartta rozet olarak gösterilir. */
+/** Önerinin hangi ekrandan çıktığı — kartta gösterilir. */
 export const SOURCE_LABELS = {
   foryou: "Sana Özel",
-  llm: "LLM",
   quick: "Hızlı Seçim",
   quiz: "Kısa Test",
   category: "Kategoriler",
+  shows: "Dizi & Film",
   similar: "Benzer öneriler",
   lucky: "Şansımı dene",
 };
 
+const CATEGORY_EMOJI = {
+  Dizi: "📺",
+  Film: "🎬",
+  Belgesel: "🎞️",
+  Müzik: "🎵",
+};
+
 function read() {
-  let raw;
-  try {
-    raw = window.localStorage.getItem(KEY);
-  } catch {
-    raw = memoryFallback.get(KEY) ?? null;
-  }
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  const list = readJson(KEY, []);
+  return Array.isArray(list) ? list : [];
 }
 
-function write(entries) {
-  const payload = JSON.stringify(entries.slice(-MAX_ENTRIES));
-  try {
-    window.localStorage.setItem(KEY, payload);
-  } catch {
-    memoryFallback.set(KEY, payload);
-  }
-}
-
-function keyOf(entry) {
-  return `${entry.kind}:${entry.id}`;
-}
-
-/**
- * Gösterilen önerileri geçmişe yazar.
- * @param {Array<{kind:"item"|"show"|"llm", id:string, payload?:object}>} records
- * @param {string} source - SOURCE_LABELS içindeki bir anahtar
- */
-export function recordRecommendations(records, source) {
-  if (!Array.isArray(records) || records.length === 0) return;
-
+/** Gösterilen önerileri geçmişe yazar. */
+export function recordRecommendations(suggestions, source) {
+  if (!Array.isArray(suggestions) || suggestions.length === 0) return;
   const entries = read();
-  const index = new Map(entries.map((entry, i) => [keyOf(entry), i]));
   const now = new Date().toISOString();
-
-  for (const record of records) {
-    if (!record?.id || !record?.kind) continue;
-    const key = keyOf(record);
-    const existing = index.get(key);
-
-    if (existing !== undefined) {
-      entries[existing].count = (entries[existing].count ?? 1) + 1;
-      entries[existing].at = now;
-      entries[existing].source = source;
+  for (const item of suggestions) {
+    if (!item?.id) continue;
+    const existing = entries.find((entry) => entry.item.id === item.id);
+    if (existing) {
+      existing.count = (existing.count ?? 1) + 1;
+      existing.at = now;
+      existing.source = source;
+      existing.item = { ...existing.item, ...item };
     } else {
-      const entry = { kind: record.kind, id: record.id, source, at: now, count: 1 };
-      if (record.payload) entry.payload = record.payload;
-      index.set(key, entries.length);
-      entries.push(entry);
+      entries.push({ item, source, at: now, count: 1 });
     }
   }
-
-  write(entries);
-}
-
-export function getHistory() {
-  return read();
+  writeJson(KEY, entries.slice(-MAX_ENTRIES));
 }
 
 export function clearHistory() {
-  write([]);
-}
-
-export function historyCount() {
-  return read().length;
+  writeJson(KEY, []);
 }
 
 /**
- * Bir kayıt için görüntülenecek bilgileri çözer.
- * Katalogdan silinmiş (ör. kullanıcının kaldırdığı) yapımlar null döner.
- */
-function resolve(entry) {
-  if (entry.kind === "llm") {
-    const payload = entry.payload ?? {};
-    if (!payload.title || !payload.query) return null;
-    return { title: payload.title, query: payload.query, why: payload.why ?? "", kindLabel: "LLM önerisi" };
-  }
-  if (entry.kind === "item") {
-    const item = getItemById(entry.id);
-    return item ? { item } : null;
-  }
-  const show = getShowById(entry.id);
-  return show ? { show } : null;
-}
-
-/** Kayıt hangi kategori başlığı altına girecek? */
-function groupOf(entry, resolved) {
-  if (entry.kind === "llm") {
-    return { key: "llm", label: "Yapay zekâ önerileri", emoji: "🤖" };
-  }
-  if (entry.kind === "item" && resolved.item) {
-    const category = CATEGORIES.find((c) => c.id === resolved.item.category);
-    return category
-      ? { key: `cat:${category.id}`, label: category.label, emoji: category.emoji }
-      : { key: "cat:diger", label: "Diğer", emoji: "📌" };
-  }
-  if (entry.kind === "show" && resolved.show) {
-    const genreId = resolved.show.genres?.[0];
-    const genre = SHOW_GENRES.find((g) => g.id === genreId);
-    return genre
-      ? { key: `genre:${genre.id}`, label: `Dizi & Film · ${genre.label}`, emoji: genre.emoji }
-      : { key: "genre:diger", label: "Dizi & Film", emoji: "🎬" };
-  }
-  return { key: "diger", label: "Diğer", emoji: "📌" };
-}
-
-/**
- * Geçmişi kategorilere ayırır.
+ * Geçmişi kategorilere ayırır: en kalabalık kategori başta, içinde en yeni öneri başta.
  * @returns {Array<{key:string, label:string, emoji:string, entries:Array}>}
- *   En kalabalık kategori başta; kategori içinde en yeni öneri başta.
  */
 export function groupedHistory() {
   const groups = new Map();
-
   for (const entry of read()) {
-    const resolved = resolve(entry);
-    if (!resolved) continue; // katalogdan kalkmış kayıt
-
-    const group = groupOf(entry, resolved);
-    if (!groups.has(group.key)) {
-      groups.set(group.key, { ...group, entries: [] });
+    const label = entry.item.category || "Diğer";
+    if (!groups.has(label)) {
+      groups.set(label, { key: label, label, emoji: CATEGORY_EMOJI[label] ?? "📌", entries: [] });
     }
-    groups.get(group.key).entries.push({ ...entry, resolved });
+    groups.get(label).entries.push(entry);
   }
-
   const list = [...groups.values()];
-  list.forEach((group) => {
-    group.entries.sort((a, b) => new Date(b.at) - new Date(a.at));
-  });
+  list.forEach((group) => group.entries.sort((a, b) => new Date(b.at) - new Date(a.at)));
   list.sort((a, b) => b.entries.length - a.entries.length);
   return list;
+}
+
+/** Yapay zekâya "bunları önerme" diye gönderilecek son başlıklar. */
+export function recentTitles(limit = 30) {
+  return read()
+    .sort((a, b) => new Date(b.at) - new Date(a.at))
+    .slice(0, limit)
+    .map((entry) => entry.item.title);
 }
