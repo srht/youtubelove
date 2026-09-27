@@ -4,11 +4,11 @@
 import { onRequestGet, onRequestPost } from "./suggest.js";
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/suggest") {
-      const context = { request, env, waitUntil: (p) => ctx.waitUntil(p) };
+      const context = { request, env };
       if (request.method === "GET") return onRequestGet(context);
       if (request.method === "POST") return onRequestPost(context);
       return new Response("Method Not Allowed", { status: 405, headers: { allow: "GET, POST" } });

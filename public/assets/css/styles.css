@@ -1134,8 +1134,8 @@ h2, h3 {
   font-size: 0.95rem;
 }
 
-.card.skeleton {
-  min-height: 220px;
+.search-item.skeleton {
+  min-height: 86px;
   background: linear-gradient(90deg, var(--chip-bg) 0%, var(--accent) 50%, var(--chip-bg) 100%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
@@ -1148,7 +1148,7 @@ h2, h3 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card.skeleton { animation: none; }
+  .search-item.skeleton { animation: none; }
 }
 
 .ai-error {
@@ -1207,3 +1207,82 @@ h2, h3 {
 .status-line { margin: 4px 0; }
 
 .advanced summary { color: var(--text-muted); }
+
+/* --- Arama başlıkları listesi ------------------------------------------- */
+.search-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.search-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.search-item.is-watched { opacity: 0.7; }
+
+.search-link {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  border-radius: 8px;
+}
+
+.search-link:hover .search-title {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.search-link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+.search-icon { flex: none; }
+.search-title { flex: 1; overflow-wrap: anywhere; }
+.search-arrow { flex: none; color: var(--primary); }
+
+.search-why {
+  margin: 0;
+  padding-left: 28px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.search-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  padding-left: 28px;
+}
+
+.search-meta { font-size: 0.8rem; }
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-actions .save-btn { width: 36px; height: 32px; font-size: 1rem; }
+
+.search-item .reason-note,
+.search-item .history-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.search-item .history-meta { padding-left: 28px; }

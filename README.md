@@ -8,19 +8,18 @@ Ziyaretçiden hiçbir API anahtarı istenmez.
 
 ```
 Tarayıcı ──POST /api/suggest──▶ Cloudflare Worker
-                                   ├─ Workers AI (anahtar yok) ya da Claude (isteğe bağlı)
-                                   │    → ilginç video / dizi / film önerileri (JSON)
-                                   └─ YouTube Data API (isteğe bağlı)
-                                        → her öneri için en çok izlenen gerçek video
+                                   └─ Workers AI (anahtar yok) ya da Claude (isteğe bağlı)
+                                        → YouTube'da aratılacak arama başlıkları (JSON)
+Tarayıcı ── başlığa tıklama ──▶ youtube.com/results?search_query=… (izlenmeye göre sıralı)
 ```
 
 1. Site, seçimlerini (ruh hali, hedef, kategori, dizi filtreleri, test cevapları), süre tercihini
    ve hafızandaki izlediğin/kaydettiğin başlıkları kısa bir metne çevirip `/api/suggest`'e gönderir.
 2. `worker/suggest.js` bu metni yapay zekâya verir ve JSON öneri listesi alır.
    Daha önce izlediğin ve yakın zamanda önerilenler "tekrar önerme" listesiyle gönderilir.
-3. `YOUTUBE_API_KEY` tanımlıysa her öneri YouTube'da **izlenme sayısına göre** aranır ve en üstteki
-   gerçek video (başlık, kanal, kapak, izlenme) karta eklenir; kart doğrudan o videoya bağlanır.
-   Tanımlı değilse kart, izlenmeye göre sıralı YouTube arama sonucuna gider.
+3. Öneriler **arama başlıkları** listesi olarak gösterilir (ör. "kaygılıyım" seçince
+   "4-7-8 nefes egzersizi rehberli", "yağmur sesi 1 saat" gibi). Bir başlığa tıklayınca YouTube'un
+   arama sonuç sayfası izlenmeye göre sıralı açılır; ne izleyeceğini orada sen seçersin.
 
 ## Özellikler
 
@@ -53,15 +52,10 @@ Cloudflare → Workers & Pages → youtubelove → **Settings → Variables and 
 
 | Ad | Ne işe yarar |
 | --- | --- |
-| `YOUTUBE_API_KEY` | Önerilere en çok izlenen gerçek videoyu ekler. Google Cloud Console → YouTube Data API v3'ü etkinleştir → API anahtarı oluştur. |
 | `ANTHROPIC_API_KEY` | Workers AI yerine Claude kullanılır (Türkçe öneri kalitesi genelde daha iyi). |
 | `ANTHROPIC_MODEL` | (İsteğe bağlı) Claude model adını değiştirir. |
 
 Anahtarlar hiçbir zaman depoya yazılmaz; yalnızca sunucu tarafında kullanılır.
-
-**YouTube kotası:** ücretsiz kota günde 10.000 birimdir; bir arama 100 birim harcar (≈ günde 100
-yeni arama). Aynı arama 24 saat önbellekte tutulur. Kota dolarsa öneriler videosuz (arama
-bağlantısıyla) gelmeye devam eder.
 
 ### Kendi anahtarınla (isteğe bağlı)
 

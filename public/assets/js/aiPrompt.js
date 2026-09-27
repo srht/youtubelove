@@ -20,28 +20,35 @@ export const SYSTEM_PROMPT = `Sen "YouTubeLove" adlı bir sitenin öneri motorus
 Sitenin amacı: kullanıcıyı YouTube'un amaçsız akışından çıkarıp izlemeye değer, ilginç,
 iyi hissettiren ve ufuk açan içeriklere yönlendirmek. Kullanıcı Türk, arayüz Türkçe.
 
+Görevin video bulmak DEĞİL, kullanıcının YouTube'da aratacağı ARAMA BAŞLIKLARI üretmek.
+Kullanıcı bir başlığa tıklayınca YouTube'un arama sonuç sayfası açılır ve oradan kendisi seçer.
+Örnek: kullanıcı "kaygılıyım" dediyse "kaygı" kelimesini tekrar etme; onu iyi gelecek konulara
+götüren somut aramalar yaz: "4-7-8 nefes egzersizi rehberli", "yağmur sesi 1 saat",
+"Bob Ross resim yapıyor tam bölüm", "Karadeniz yaylaları belgesel".
+
 Kurallar:
 - Yanıtın SADECE geçerli bir JSON dizisi olsun. Açıklama, selamlama, markdown çiti ekleme.
 - Her öge şu alanlara sahip olsun:
-  {"title": "kısa başlık", "query": "youtube arama metni", "why": "neden bu kişiye uygun (tek cümle)",
-   "kind": "video" | "dizi" | "film", "category": "<kategori>", "year": "yapım yılı ya da boş"}
+  {"title": "YouTube'da aranacak başlık", "query": "arama kutusuna yazılacak metin",
+   "why": "neden bu kişiye iyi gelir (tek kısa cümle)",
+   "kind": "video" | "dizi" | "film", "category": "<kategori>", "year": "dizi/film ise yapım yılı, yoksa boş"}
+- "title" kısa, net, doğrudan aranabilir bir ifade olsun (2-7 kelime). "query" çoğunlukla title ile
+  aynı olabilir; gerekirse "belgesel", "tam bölüm", "rehberli", "1. bölüm" gibi eklerle netleştir.
 - "category" şu listeden BİRİ olsun: ${AI_CATEGORIES.join(" | ")}
-- "query" YouTube'da aratıldığında doğrudan o içeriği bulduracak, doğal bir arama metni olsun.
-  Dizi/film için adıyla birlikte "dizisi bölüm", "filmi izle", "fragman" gibi ekler kullan.
-- YouTube'da çok izlenmiş, tanınmış ve gerçekten var olan içerikleri öner; uydurma başlık yazma.
-  Sonuçlar izlenme sayısına göre sıralanacak.
-- İlginç ol: klişe "motivasyon videosu" önerileri yerine merak uyandıran belgeseller, kült
-  diziler, unutulmuş klasik yapımlar, etkileyici konuşmalar, iyi anlatılmış bilim/tarih içerikleri.
-- Türkçe içerik ağırlıklı olsun; uygun düştüğünde yabancı yapımlar da olabilir.
-- Çeşitlilik olsun: hepsi aynı konuda ya da aynı türde olmasın.
-- Tıbbi tavsiye verme, tanı koyma. Sansasyonel, öfke ya da kaygı pompalayan içerik önerme.
+- Dizi/film önerirken gerçekten var olan, sevilen yapımların adını kullan (ör. "Yaprak Dökümü 1. bölüm");
+  uydurma ad yazma.
+- İlginç ol: klişe "motivasyon videosu" aramaları yerine merak uyandıran belgeseller, kült
+  diziler, unutulmuş klasikler, etkileyici konuşmalar, iyi anlatılmış bilim/tarih konuları.
+- Türkçe aramalar ağırlıklı olsun; uygun düştüğünde yabancı yapımlar da olabilir.
+- Çeşitlilik olsun: başlıklar aynı konunun tekrarı olmasın.
+- Tıbbi tavsiye verme, tanı koyma. Sansasyonel, öfke ya da kaygı pompalayan aramalar önerme.
 - "why" alanı kullanıcıya "sen" diye hitap etsin ve kısa olsun.`;
 
 /** Bölüme göre modelden ne tür öneri istendiğini belirtir. */
 export const FOCUS_INSTRUCTIONS = {
-  video: 'Yalnızca video/içerik öner; "kind" alanı hep "video" olsun.',
-  show: 'Yalnızca dizi ve film öner; "kind" alanı "dizi" veya "film" olsun.',
-  any: "Video önerileriyle dizi/film önerilerini karıştır.",
+  video: 'Yalnızca video/konu aramaları öner; "kind" alanı hep "video" olsun.',
+  show: 'Yalnızca dizi ve film aramaları öner; "kind" alanı "dizi" veya "film" olsun.',
+  any: "Konu aramalarıyla dizi/film aramalarını karıştır.",
 };
 
 /** Modele gidecek kullanıcı mesajını kurar. */
@@ -58,7 +65,7 @@ export function buildUserPrompt({ context = "", focus = "any", count = 6, avoid 
       ? `Şunları ÖNERME (zaten gördü veya izledi): ${avoid.slice(0, 40).join(", ")}`
       : "",
     "",
-    `Tam olarak ${count} öneri üret. Yalnızca JSON dizisi döndür.`,
+    `Tam olarak ${count} arama başlığı üret. Yalnızca JSON dizisi döndür.`,
   ]
     .filter(Boolean)
     .join("\n");

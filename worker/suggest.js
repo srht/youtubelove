@@ -1,15 +1,14 @@
 // /api/suggest uç noktası (worker/index.js yönlendirir)
 //
-// Sitenin bütün önerileri buradan gelir. Ziyaretçiden hiçbir anahtar istenmez:
+// Sitenin bütün önerileri buradan gelir. Ziyaretçiden hiçbir anahtar istenmez.
+// Yapay zekâ, kullanıcının YouTube'da aratacağı arama başlıklarını üretir; tarayıcı her başlığı
+// izlenmeye göre sıralı bir YouTube arama bağlantısına çevirir.
 //
-//   1. Yapay zekâ: Cloudflare Workers AI (wrangler.toml'daki `ai` bağlaması, anahtar gerekmez).
-//      Site sahibi isterse ANTHROPIC_API_KEY gizli değişkeni tanımlayıp Claude'a geçebilir.
-//   2. YouTube: YOUTUBE_API_KEY gizli değişkeni tanımlıysa her öneri için YouTube'da
-//      izlenme sayısına göre en üstteki gerçek video (başlık, kanal, kapak, izlenme) eklenir.
-//      Tanımlı değilse öneriler, izlenmeye göre sıralı YouTube arama bağlantısıyla gelir.
+//   - Varsayılan: Cloudflare Workers AI (wrangler.toml'daki `ai` bağlaması, anahtar gerekmez).
+//   - Site sahibi isterse ANTHROPIC_API_KEY gizli değişkeni tanımlayıp Claude'a geçebilir.
 //
-// GET  /api/suggest → hangi özelliklerin açık olduğunu söyler (sağlık kontrolü).
-// POST /api/suggest → { context, focus, count, avoid, lucky } → { suggestions, provider, youtube }
+// GET  /api/suggest → yapay zekânın açık olup olmadığını söyler (sağlık kontrolü).
+// POST /api/suggest → { context, focus, count, avoid, lucky } → { suggestions, provider }
 
 import {
   SYSTEM_PROMPT,
@@ -23,7 +22,6 @@ const WORKERS_AI_MODELS = [
   "@cf/meta/llama-3.1-8b-instruct",
 ];
 const DEFAULT_ANTHROPIC_MODEL = "claude-opus-5";
-const YOUTUBE_CACHE_SECONDS = 60 * 60 * 24;
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -89,106 +87,16 @@ async function askAnthropic(env, system, user) {
     .join("\n");
 }
 
-// --- YouTube --------------------------------------------------------------
-
-/**
- * Bir arama için YouTube'da izlenme sayısına göre en üstteki videoyu getirir.
- * Arama isteği kotadan 100 birim harcadığı için sonuç 24 saat önbellekte tutulur.
- */
-async function topVideo(query, apiKey, waitUntil) {
-  const cache = typeof caches !== "undefined" ? caches.default : null;
-  const cacheKey = new Request(`https://youtubelove.cache/yt?q=${encodeURIComponent(query)}`);
-
-  if (cache) {
-    const hit = await cache.match(cacheKey);
-    if (hit) return hit.json();
-  }
-
-  const search = new URL("https://www.googleapis.com/youtube/v3/search");
-  search.search = new URLSearchParams({
-    part: "snippet",
-    type: "video",
-    order: "viewCount",
-    maxResults: "1",
-    q: query,
-    regionCode: "TR",
-    relevanceLanguage: "tr",
-    safeSearch: "moderate",
-    key: apiKey,
-  }).toString();
-
-  const searchResponse = await fetch(search);
-  if (!searchResponse.ok) {
-    const error = new Error(`YouTube ${searchResponse.status}`);
-    error.status = searchResponse.status;
-    throw error;
-  }
-  const searchData = await searchResponse.json();
-  const hit = searchData.items?.[0];
-  if (!hit?.id?.videoId) return null;
-
-  let views = null;
-  try {
-    const stats = new URL("https://www.googleapis.com/youtube/v3/videos");
-    stats.search = new URLSearchParams({ part: "statistics", id: hit.id.videoId, key: apiKey }).toString();
-    const statsData = await (await fetch(stats)).json();
-    views = Number(statsData.items?.[0]?.statistics?.viewCount ?? NaN);
-    if (!Number.isFinite(views)) views = null;
-  } catch {
-    /* izlenme sayısı olmadan da gösterilebilir */
-  }
-
-  const video = {
-    id: hit.id.videoId,
-    title: hit.snippet?.title ?? "",
-    channel: hit.snippet?.channelTitle ?? "",
-    publishedAt: hit.snippet?.publishedAt ?? "",
-    thumbnail:
-      hit.snippet?.thumbnails?.high?.url ??
-      hit.snippet?.thumbnails?.medium?.url ??
-      `https://i.ytimg.com/vi/${hit.id.videoId}/hqdefault.jpg`,
-    views,
-  };
-
-  if (cache) {
-    const stored = new Response(JSON.stringify(video), {
-      headers: { "content-type": "application/json", "cache-control": `max-age=${YOUTUBE_CACHE_SECONDS}` },
-    });
-    const put = cache.put(cacheKey, stored);
-    if (waitUntil) waitUntil(put);
-    else await put;
-  }
-  return video;
-}
-
-async function attachVideos(suggestions, apiKey, waitUntil) {
-  let quotaExhausted = false;
-  await Promise.all(
-    suggestions.map(async (suggestion) => {
-      if (quotaExhausted) return;
-      try {
-        const video = await topVideo(suggestion.query, apiKey, waitUntil);
-        if (video) suggestion.video = video;
-      } catch (error) {
-        // 403 genelde günlük kota dolduğunda gelir; öneriler videosuz da işe yarar.
-        if (error.status === 403) quotaExhausted = true;
-      }
-    })
-  );
-  return !quotaExhausted;
-}
-
 // --- İstek işleyicileri ----------------------------------------------------
 
 export async function onRequestGet({ env }) {
   return json({
     available: Boolean(providerOf(env)),
     provider: providerOf(env),
-    youtube: Boolean(env.YOUTUBE_API_KEY),
   });
 }
 
-export async function onRequestPost({ request, env, waitUntil }) {
+export async function onRequestPost({ request, env }) {
   const provider = providerOf(env);
   if (!provider) {
     return json(
@@ -233,10 +141,5 @@ export async function onRequestPost({ request, env, waitUntil }) {
     return json({ error: "Yapay zekâ bu sefer öneri üretemedi, tekrar dene." }, 502);
   }
 
-  let youtube = false;
-  if (env.YOUTUBE_API_KEY) {
-    youtube = await attachVideos(suggestions, env.YOUTUBE_API_KEY, waitUntil);
-  }
-
-  return json({ suggestions, provider, youtube });
+  return json({ suggestions, provider });
 }

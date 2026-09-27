@@ -15,17 +15,17 @@ const TIMEOUT_MS = 60_000;
 export async function checkServer() {
   try {
     const response = await fetch(ENDPOINT, { headers: { accept: "application/json" } });
-    if (!response.ok) return { available: false, youtube: false };
+    if (!response.ok) return { available: false };
     return await response.json();
   } catch {
-    return { available: false, youtube: false };
+    return { available: false };
   }
 }
 
 /**
  * @param {{context?:string, focus?:"video"|"show"|"any", count?:number,
  *          avoid?:string[], lucky?:boolean}} options
- * @returns {Promise<{suggestions:Array<object>, provider:string, youtube:boolean}>}
+ * @returns {Promise<{suggestions:Array<object>, provider:string}>}
  */
 export async function getSuggestions(options) {
   let serverError;
@@ -53,7 +53,7 @@ export async function getSuggestions(options) {
 
   if (isLlmReady()) {
     const suggestions = await generateLlmSuggestions(options.context ?? "", options);
-    return { suggestions, provider: "own-key", youtube: false };
+    return { suggestions, provider: "own-key" };
   }
   throw new Error(serverError);
 }

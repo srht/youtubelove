@@ -116,7 +116,7 @@
 
     <div id="luckyBox" class="lucky-box" aria-live="polite" hidden></div>
     <div id="foryouStart" class="start-grid" hidden></div>
-    <div id="foryouResults" class="results-grid" aria-live="polite"></div>
+    <div id="foryouResults" class="search-list" aria-live="polite"></div>
     <div class="next-step" id="foryouNext" hidden></div>
   </section>
 
@@ -124,7 +124,7 @@
   <section id="panel-quick" class="tab-panel" role="tabpanel" aria-labelledby="tab-quick" hidden>
     <div class="panel-head">
       <h2>⚡ Hızlı Seçim</h2>
-      <p class="muted">Nasıl hissettiğini ve ne istediğini seç; yapay zekâ sana uygun içerikleri bulsun.</p>
+      <p class="muted">Nasıl hissettiğini ve ne istediğini seç; yapay zekâ sana YouTube’da aratabileceğin başlıklar önersin.</p>
     </div>
     <div class="picker">
       <div class="picker-group">
@@ -137,7 +137,7 @@
       </div>
       <button type="button" id="quickSubmit" class="btn btn-primary btn-large" disabled>✨ Önerileri getir</button>
     </div>
-    <div id="quickResults" class="results-grid" aria-live="polite"></div>
+    <div id="quickResults" class="search-list" aria-live="polite"></div>
     <div class="next-step" id="quickNext"></div>
   </section>
 
@@ -163,7 +163,7 @@
         <button type="button" id="quizMore" class="btn btn-secondary btn-small">✨ Başka öneriler</button>
         <button type="button" id="quizRestart" class="btn btn-ghost btn-small">Testi baştan başlat</button>
       </div>
-      <div id="quizResults" class="results-grid" aria-live="polite"></div>
+      <div id="quizResults" class="search-list" aria-live="polite"></div>
       <div class="next-step" id="quizNextStep"></div>
     </div>
   </section>
@@ -180,7 +180,7 @@
         <div class="chip-group" id="categoryChips" role="group" aria-label="Kategori seçimi"></div>
       </div>
     </div>
-    <div id="categoryResults" class="results-grid" aria-live="polite"></div>
+    <div id="categoryResults" class="search-list" aria-live="polite"></div>
     <div class="next-step" id="categoryNext"></div>
   </section>
 
@@ -225,7 +225,7 @@
       </div>
     </div>
 
-    <div id="showResults" class="results-grid" aria-live="polite"></div>
+    <div id="showResults" class="search-list" aria-live="polite"></div>
 
     <details class="add-form-wrap" id="addShowDetails">
       <summary>➕ Kendi dizini / filmini ekle</summary>
@@ -251,7 +251,7 @@
           <span class="field-label">YouTube bağlantısı veya video kimliği</span>
           <input type="text" id="fVideo" name="videoId" autocomplete="off"
                  placeholder="https://www.youtube.com/watch?v=..." aria-describedby="fVideoHelp" />
-          <small id="fVideoHelp" class="field-help">Kapak görseli için kullanılır. Boş bırakırsan otomatik bir kapak üretilir.</small>
+          <small id="fVideoHelp" class="field-help">Doldurursan kayıt doğrudan bu videoyu açar; boş bırakırsan başlık YouTube'da aranır.</small>
         </label>
 
         <div class="form-row">
@@ -320,7 +320,7 @@
         burada birikir ve yapay zekâ sana benzerlerini önerebilir.
         <button type="button" class="link-btn" data-goto="shows">Dizi &amp; Film'e git →</button>
       </p>
-      <div id="watchedResults" class="results-grid" aria-live="polite"></div>
+      <div id="watchedResults" class="search-list" aria-live="polite"></div>
     </section>
 
     <section class="library-section" aria-labelledby="similarHeading">
@@ -329,7 +329,7 @@
         <button type="button" id="similarBtn" class="btn btn-primary btn-small">Benzerlerini öner</button>
       </div>
       <p id="similarIntro" class="muted">İzlediklerini ve kaydettiklerini yapay zekâya verip benzerlerini buldururum.</p>
-      <div id="similarResults" class="results-grid" aria-live="polite"></div>
+      <div id="similarResults" class="search-list" aria-live="polite"></div>
     </section>
 
     <section class="library-section" aria-labelledby="savedHeading">
@@ -338,7 +338,7 @@
         Sonra izlemek istediklerini 💚 ile kaydet; burada dururlar.
         <button type="button" class="link-btn" data-goto="foryou">Sana Özel'e git →</button>
       </p>
-      <div id="savedResults" class="results-grid" aria-live="polite"></div>
+      <div id="savedResults" class="search-list" aria-live="polite"></div>
     </section>
 
     <section class="library-section" aria-labelledby="historyHeading">
@@ -377,7 +377,6 @@
 
     <div class="status-box" id="aiStatus">
       <p class="status-line"><span id="aiStatusIcon">⏳</span> <span id="aiStatusText">Yapay zekâ servisi kontrol ediliyor…</span></p>
-      <p class="status-line"><span id="ytStatusIcon">⏳</span> <span id="ytStatusText">YouTube bağlantısı kontrol ediliyor…</span></p>
     </div>
 
     <form id="countForm" class="add-form" novalidate>

@@ -10,7 +10,6 @@ import {
 import { SORT_ORDERS, buildSearchUrl } from "./youtube.js";
 import { QUIZ_QUESTIONS, summarizeProfile } from "./quiz.js";
 import { fetchSuggestions, debounce } from "./ytSuggest.js";
-import { createThumb } from "./thumb.js";
 import { recordEvent, clearMemory, getEvents } from "./memory.js";
 import { memorySummary, profileContext } from "./personalize.js";
 import { getSuggestions, checkServer } from "./aiClient.js";
@@ -588,9 +587,8 @@ function renderSortChips() {
 // ---------------------------------------------------------------------------
 
 const KIND_LABEL = { video: "Video", dizi: "Dizi", film: "Film" };
-const viewsFormat = new Intl.NumberFormat("tr-TR", { notation: "compact", maximumFractionDigits: 1 });
 
-/** YouTube videosu bulunduysa doğrudan ona, bulunmadıysa izlenmeye göre sıralı aramaya gider. */
+/** Öneri, YouTube'da izlenmeye göre sıralı arama sayfasını açar (elle eklenen videolar hariç). */
 function linkFor(item) {
   if (item.video?.id) return `https://www.youtube.com/watch?v=${item.video.id}`;
   return buildSearchUrl(item.query, { sort: getSortOrder(), duration: state.intentDuration });
@@ -598,7 +596,7 @@ function linkFor(item) {
 
 /** Sıralama/süre değişince ekrandaki arama bağlantılarını yeniden kurar (yeni istek atmadan). */
 function refreshVisibleLinks() {
-  document.querySelectorAll("a.watch-link[data-query]").forEach((link) => {
+  document.querySelectorAll("a[data-query]").forEach((link) => {
     link.href = buildSearchUrl(link.dataset.query, {
       sort: getSortOrder(),
       duration: state.intentDuration,
@@ -606,11 +604,13 @@ function refreshVisibleLinks() {
   });
 }
 
+/** Bir öneriyi, tıklanınca YouTube arama sayfasını açan bir arama başlığı satırı olarak çizer. */
 function renderAiCard(item, { note = null, onRemove = null } = {}) {
-  const hasVideo = Boolean(item.video?.id);
+  const isVideoLink = Boolean(item.video?.id);
+  const opened = () => recordEvent("item_opened", { id: item.id, title: item.title, category: item.category });
 
   const watchedBtn = el("button", {
-    class: "btn btn-secondary btn-small watched-toggle",
+    class: "btn btn-ghost btn-small watched-toggle",
     type: "button",
     "aria-pressed": String(isWatched(item.id)),
     text: isWatched(item.id) ? "✅ İzledim" : "＋ İzledim",
@@ -619,7 +619,7 @@ function renderAiCard(item, { note = null, onRemove = null } = {}) {
       if (now) recordEvent("item_watched", { id: item.id, title: item.title, category: item.category });
       watchedBtn.setAttribute("aria-pressed", String(now));
       watchedBtn.textContent = now ? "✅ İzledim" : "＋ İzledim";
-      card.classList.toggle("is-watched", now);
+      row.classList.toggle("is-watched", now);
       updateLibraryCount();
     },
   });
@@ -628,72 +628,62 @@ function renderAiCard(item, { note = null, onRemove = null } = {}) {
     class: "save-btn",
     type: "button",
     "aria-pressed": String(isSaved(item.id)),
-    "aria-label": isSaved(item.id) ? "Kaydedilenlerden çıkar" : "Sonra izlemek için kaydet",
+    "aria-label": isSaved(item.id) ? "Kaydedilenlerden çıkar" : "Sonra aramak için kaydet",
     text: isSaved(item.id) ? "💚" : "🤍",
     onclick: () => {
       const now = toggleSaved(item);
       if (now) recordEvent("item_saved", { id: item.id, title: item.title, category: item.category });
       saveBtn.setAttribute("aria-pressed", String(now));
       saveBtn.textContent = now ? "💚" : "🤍";
-      saveBtn.setAttribute("aria-label", now ? "Kaydedilenlerden çıkar" : "Sonra izlemek için kaydet");
+      saveBtn.setAttribute("aria-label", now ? "Kaydedilenlerden çıkar" : "Sonra aramak için kaydet");
       updateLibraryCount();
     },
   });
 
   const link = el("a", {
-    class: "watch-link",
+    class: "search-link",
     href: linkFor(item),
     target: "_blank",
     rel: "noopener noreferrer",
-    text: hasVideo ? "▶ YouTube'da izle" : "YouTube'da ara ↗",
-    onclick: () => recordEvent("item_opened", { id: item.id, title: item.title, category: item.category }),
-  });
-  if (!hasVideo) link.dataset.query = item.query;
-
-  const tags = [
-    el("span", { class: "tag", text: KIND_LABEL[item.kind] ?? "Video" }),
-    item.year ? el("span", { class: "tag", text: item.year }) : null,
-    el("span", { class: "tag", text: item.category }),
-    ...(item.tags ?? []).map((t) => el("span", { class: "tag", text: t })),
-    item.custom ? el("span", { class: "tag tag-custom", text: "senin eklediğin" }) : null,
-  ];
-
-  const videoLine = hasVideo
-    ? el("p", { class: "video-line" }, [
-        el("span", { class: "video-title", text: item.video.title }),
-        el("span", {
-          class: "muted",
-          text: [
-            item.video.channel,
-            item.video.views != null ? `${viewsFormat.format(item.video.views)} izlenme` : null,
-          ].filter(Boolean).join(" · "),
-        }),
-      ])
-    : null;
-
-  const actions = [link, watchedBtn];
-  if (onRemove) {
-    actions.push(
-      el("button", {
-        class: "btn btn-ghost btn-small delete-btn",
-        type: "button",
-        "aria-label": `${item.title} kaydını sil`,
-        text: "🗑️",
-        onclick: onRemove,
-      })
-    );
-  }
-
-  const card = el("article", { class: `card ai-card${isWatched(item.id) ? " is-watched" : ""}` }, [
-    note ? el("p", { class: "reason-note", text: note }) : null,
-    createThumb({ id: item.id, title: item.title, type: item.kind, videoId: item.video?.id }),
-    el("div", { class: "card-top" }, [el("h4", { text: item.title }), saveBtn]),
-    item.why ? el("p", { class: "why", text: item.why }) : null,
-    videoLine,
-    el("div", { class: "card-tags" }, tags),
-    el("div", { class: "card-actions" }, actions),
+    title: isVideoLink ? "YouTube'da videoyu aç" : `YouTube'da ara: ${item.query}`,
+    onclick: opened,
+  }, [
+    el("span", { class: "search-icon", "aria-hidden": "true", text: isVideoLink ? "▶" : "🔍" }),
+    el("span", { class: "search-title", text: item.title }),
+    el("span", { class: "search-arrow", "aria-hidden": "true", text: "↗" }),
   ]);
-  return card;
+  if (!isVideoLink) link.dataset.query = item.query;
+
+  const kindLabel = item.kind !== "video" ? KIND_LABEL[item.kind] : null;
+  const meta = [
+    kindLabel,
+    item.year || null,
+    item.category !== kindLabel ? item.category : null,
+    item.custom ? "senin eklediğin" : null,
+  ].filter(Boolean).join(" · ");
+
+  const row = el("article", { class: `search-item${isWatched(item.id) ? " is-watched" : ""}` }, [
+    note ? el("p", { class: "reason-note", text: note }) : null,
+    link,
+    item.why ? el("p", { class: "search-why", text: item.why }) : null,
+    el("div", { class: "search-foot" }, [
+      el("span", { class: "search-meta muted", text: meta }),
+      el("div", { class: "search-actions" }, [
+        saveBtn,
+        watchedBtn,
+        onRemove
+          ? el("button", {
+              class: "btn btn-ghost btn-small delete-btn",
+              type: "button",
+              "aria-label": `${item.title} kaydını sil`,
+              text: "🗑️",
+              onclick: onRemove,
+            })
+          : null,
+      ]),
+    ]),
+  ]);
+  return row;
 }
 
 // ---------------------------------------------------------------------------
@@ -710,9 +700,9 @@ function durationContext() {
 
 function renderLoading(container, count) {
   container.innerHTML = "";
-  container.appendChild(el("p", { class: "ai-status", text: "✨ Yapay zekâ senin için arıyor…" }));
+  container.appendChild(el("p", { class: "ai-status", text: "✨ Yapay zekâ senin için arama başlıkları hazırlıyor…" }));
   for (let i = 0; i < Math.min(count, 6); i++) {
-    container.appendChild(el("div", { class: "card skeleton", "aria-hidden": "true" }));
+    container.appendChild(el("div", { class: "search-item skeleton", "aria-hidden": "true" }));
   }
 }
 
@@ -1141,7 +1131,7 @@ function renderHistorySection() {
         el("span", { class: "badge badge-soft", text: String(group.entries.length) }),
       ])
     );
-    const grid = el("div", { class: "results-grid" });
+    const grid = el("div", { class: "search-list" });
     group.entries.forEach((entry) => {
       const card = renderAiCard(entry.item);
       const bits = [SOURCE_LABELS[entry.source] ?? entry.source, formatHistoryDate(entry.at)];
@@ -1225,12 +1215,6 @@ async function renderServerStatus() {
     set("aiStatus", "🔑", "Sitenin servisine ulaşılamadı; öneriler gelişmiş ayardaki kendi anahtarınla üretilecek.");
   } else {
     set("aiStatus", "⚠️", "Sitenin yapay zekâ servisine ulaşılamadı. Site Cloudflare Pages üzerinde çalışmıyor olabilir.");
-  }
-
-  if (status.youtube) {
-    set("ytStatus", "✅", "YouTube bağlı: her öneriye YouTube'da en çok izlenen gerçek video eklenir.");
-  } else {
-    set("ytStatus", "ℹ️", "YouTube anahtarı tanımlı değil: öneriler, izlenmeye göre sıralı YouTube aramasına götürür.");
   }
 }
 
