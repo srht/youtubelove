@@ -22,6 +22,10 @@ bağlantı verebilir veya yer imine ekleyebilirsin.
 - **Sana Özel** — “Önerileri göster” düğmesi, geçmiş seçimlerinden ve izlediklerinden oluşan bir
   hafızaya göre her seferinde yeniden derlenen karma bir liste üretir (video önerileri + dizi/film).
   Her kart neden önerildiğini söyler; aynı düğmeye tekrar basınca yeni set gelir.
+- **🎲 Şansımı dene** — Sana Özel'deki düğme, video önerileri ve dizi/film kataloğu arasından
+  tamamen rastgele tek bir öneri çeker (izlediklerin hariç); "Bir daha" ile yenisini çekersin.
+  *“Site her açıldığında rastgele bir öneriyle başlasın”* kutusunu işaretlersen site her
+  açılışta bununla başlar. `…/#lucky` adresi de doğrudan bu modda açar.
 - **Hızlı Seçim** — ruh halini ve hedefini seç, anında öneri al.
 - **Kısa Test** — 5 soruluk bir testle daha isabetli bir profil çıkar.
 - **Kategoriler** — sakinleşme, odaklanma, öğrenme, beden, yaratıcılık gibi 9 alanda göz at.

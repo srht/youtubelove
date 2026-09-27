@@ -1,4 +1,4 @@
-import { CATEGORIES, MOODS, GOALS, DURATIONS } from "./data.js";
+import { CATEGORIES, MOODS, GOALS, DURATIONS, ITEMS } from "./data.js";
 import { buildSearchUrlForItem, SORT_ORDERS } from "./youtube.js";
 import { recommend, listByCategory, getItemById } from "./recommend.js";
 import { QUIZ_QUESTIONS, answersToProfile, summarizeProfile } from "./quiz.js";
@@ -12,6 +12,7 @@ import {
 } from "./shows.js";
 import {
   filterShows,
+  allShows,
   similarToWatched,
   watchedStats,
   getShowById,
@@ -47,6 +48,8 @@ import {
   setSortOrder,
   getTheme,
   setTheme,
+  getLuckyStart,
+  setLuckyStart,
 } from "./storage.js";
 
 const TIMER_MINUTES = { kisa: 8, orta: 20, uzun: 45 };
@@ -412,7 +415,11 @@ function renderMemoryStatus() {
   }
 
   // Hafıza boşken kullanıcıyı üretken bölümlere yönlendir.
-  renderStartCards(!summary && document.getElementById("foryouResults").childElementCount === 0);
+  renderStartCards(
+    !summary &&
+      document.getElementById("foryouResults").childElementCount === 0 &&
+      document.getElementById("luckyBox").hidden
+  );
 
   const bits = [];
   if (eventCount > 0) bits.push(`${eventCount} hareket`);
@@ -842,7 +849,68 @@ function initLlmSections() {
   syncAutoToggles();
 }
 
+// ---------------------------------------------------------------------------
+// Şansımı dene: tamamen rastgele tek bir öneri
+// ---------------------------------------------------------------------------
+
+let lastLuckyId = null;
+
+/** Videolar ve dizi/filmler arasından rastgele biri; izlenenler ve az önce çıkan hariç. */
+function drawLuckyPick() {
+  const watched = new Set(getWatchedIds());
+  const pool = [
+    ...ITEMS.map((item) => ({ kind: "item", data: item })),
+    ...allShows()
+      .filter((show) => !watched.has(show.id))
+      .map((show) => ({ kind: "show", data: show })),
+  ].filter((entry) => entry.data.id !== lastLuckyId);
+
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  lastLuckyId = pick.data.id;
+  return pick;
+}
+
+function showLuckyPick() {
+  const box = document.getElementById("luckyBox");
+  const pick = drawLuckyPick();
+  const card = pick.kind === "item" ? renderCard(pick.data) : renderShowCard(pick.data);
+
+  box.innerHTML = "";
+  box.appendChild(
+    el("div", { class: "lucky-head" }, [
+      el("h3", { text: "🎲 Şansına bu çıktı" }),
+      el("div", { class: "lucky-actions" }, [
+        el("button", {
+          class: "btn btn-primary btn-small",
+          type: "button",
+          text: "🎲 Bir daha",
+          onclick: showLuckyPick,
+        }),
+        el("button", {
+          class: "btn btn-ghost btn-small",
+          type: "button",
+          text: "Kapat",
+          onclick: () => {
+            box.hidden = true;
+            renderMemoryStatus();
+          },
+        }),
+      ]),
+    ])
+  );
+  box.appendChild(card);
+  box.hidden = false;
+  renderStartCards(false);
+
+  recordRecommendations([{ kind: pick.kind, id: pick.data.id }], "lucky");
+}
+
 function initForYouTab() {
+  const luckyToggle = document.getElementById("luckyStart");
+  luckyToggle.checked = getLuckyStart();
+  luckyToggle.addEventListener("change", () => setLuckyStart(luckyToggle.checked));
+  document.getElementById("luckyBtn").addEventListener("click", showLuckyPick);
+
   renderMemoryStatus();
   refreshLlmAvailability();
 
@@ -1747,6 +1815,15 @@ function init() {
   const previousProfile = getQuizProfile();
   if (previousProfile) {
     state.quiz.answers = { ...previousProfile };
+  }
+
+  // "Şansımı dene" modu: ayar açıksa ya da #lucky adresiyle gelindiyse rastgele öneriyle aç.
+  // Belirli bir bölümün adresiyle gelindiyse o bölüme saygı gösterilir.
+  const hash = window.location.hash.replace("#", "");
+  const opensOnForYou = hash === "" || hash === "foryou" || !TAB_IDS.includes(hash);
+  if (hash === "lucky" || (getLuckyStart() && opensOnForYou)) {
+    switchTab("foryou", { scrollTop: false });
+    showLuckyPick();
   }
 }
 

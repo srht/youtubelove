@@ -21,6 +21,7 @@ export const SOURCE_LABELS = {
   quiz: "Kısa Test",
   category: "Kategoriler",
   similar: "Benzer öneriler",
+  lucky: "Şansımı dene",
 };
 
 function read() {

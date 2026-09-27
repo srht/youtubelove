@@ -135,7 +135,7 @@ export function toggleSavedShow(showId) {
 
 // ---- Genel tercihler (dil vb.) ----
 export function getPrefs() {
-  return { useEnglish: false, sort: "views", theme: "system", ...readJson(KEYS.PREFS, {}) };
+  return { useEnglish: false, sort: "views", theme: "system", luckyStart: false, ...readJson(KEYS.PREFS, {}) };
 }
 
 /** Görünüm teması: "system" | "light" | "dark". */
@@ -145,6 +145,15 @@ export function getTheme() {
 
 export function setTheme(theme) {
   savePrefs({ ...getPrefs(), theme });
+}
+
+/** Açılışta rastgele öneriyle başlansın mı ("şansımı dene" modu). */
+export function getLuckyStart() {
+  return Boolean(getPrefs().luckyStart);
+}
+
+export function setLuckyStart(on) {
+  savePrefs({ ...getPrefs(), luckyStart: Boolean(on) });
 }
 
 /** Arama sonuçlarının sıralaması (varsayılan: en çok izlenen). */

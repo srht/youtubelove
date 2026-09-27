@@ -103,14 +103,20 @@
       <div class="foryou-info">
         <p id="memorySummary" class="memory-summary"></p>
         <p id="memoryMeta" class="muted memory-meta"></p>
+        <label class="lucky-start" for="luckyStart">
+          <input type="checkbox" id="luckyStart" />
+          <span>Site her açıldığında rastgele bir öneriyle başlasın</span>
+        </label>
       </div>
       <div class="foryou-actions">
         <button type="button" id="foryouGenerate" class="btn btn-primary btn-large">Önerileri göster</button>
+        <button type="button" id="luckyBtn" class="btn btn-secondary btn-large">🎲 Şansımı dene</button>
         <button type="button" id="foryouLlm" class="btn btn-secondary btn-large" hidden>🤖 LLM ile öner</button>
         <button type="button" id="memoryReset" class="btn btn-ghost btn-small">Hafızayı sıfırla</button>
       </div>
     </div>
 
+    <div id="luckyBox" class="lucky-box" aria-live="polite" hidden></div>
     <div id="foryouStart" class="start-grid" hidden></div>
     <div id="foryouResults" class="results-grid" aria-live="polite"></div>
     <div class="next-step" id="foryouNext" hidden></div>

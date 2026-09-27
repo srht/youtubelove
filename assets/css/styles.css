@@ -199,6 +199,40 @@ h2, h3 {
   font-size: 0.88rem;
 }
 
+/* ---- Şansımı dene ---- */
+.lucky-start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.lucky-box {
+  max-width: 460px;
+  margin: 0 0 24px;
+  padding: 16px;
+  border: 2px dashed var(--primary);
+  border-radius: var(--radius);
+  background: var(--accent);
+  animation: fade-in 0.2s ease;
+}
+.lucky-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.lucky-head h3 {
+  margin: 0;
+}
+.lucky-actions {
+  display: flex;
+  gap: 6px;
+}
+
 /* ---- Üst çubuk (yalnızca mobil) ---- */
 .topbar {
   display: none;
