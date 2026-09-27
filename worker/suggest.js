@@ -1,4 +1,4 @@
-// Cloudflare Pages Function — /api/suggest
+// /api/suggest uç noktası (worker/index.js yönlendirir)
 //
 // Sitenin bütün önerileri buradan gelir. Ziyaretçiden hiçbir anahtar istenmez:
 //
@@ -16,7 +16,7 @@ import {
   buildUserPrompt,
   normalizeSuggestions,
   parseJsonArray,
-} from "../../assets/js/aiPrompt.js";
+} from "../public/assets/js/aiPrompt.js";
 
 const WORKERS_AI_MODELS = [
   "@cf/meta/llama-3.3-70b-instruct-fp8-fast",

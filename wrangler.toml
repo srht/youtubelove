@@ -1,14 +1,20 @@
-# Cloudflare Pages yapılandırması.
-# Pages, Git'ten dağıtırken bu dosyayı okur; dashboard'da ayrıca bir şey ayarlamaya gerek kalmaz.
-name = "youtubelove"                 # Cloudflare'deki Pages proje adıyla aynı olmalı
-pages_build_output_dir = "."
+# Cloudflare Worker yapılandırması (Workers Builds bu dosyayı okur).
+name = "youtubelove"                 # Cloudflare'deki Worker adıyla aynı olmalı
+main = "worker/index.js"
 compatibility_date = "2026-09-01"
+
+# Statik site yalnızca public/ klasöründen yayınlanır.
+# /api/* istekleri önce Worker'a gider; diğerleri doğrudan dosyalardan sunulur.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
 
 # Workers AI — /api/suggest önerileri buradan üretir. API anahtarı gerekmez.
 [ai]
 binding = "AI"
 
-# İsteğe bağlı gizli değişkenler (Cloudflare → Pages projesi → Settings → Variables and secrets):
+# İsteğe bağlı gizli değişkenler (Cloudflare → Worker → Settings → Variables and secrets):
 #   YOUTUBE_API_KEY    → önerilere YouTube'daki en çok izlenen gerçek videoyu ekler
 #   ANTHROPIC_API_KEY  → Workers AI yerine Claude kullanılır
 # Gizli değerler bu dosyaya YAZILMAZ.

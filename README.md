@@ -7,7 +7,7 @@ Ziyaretçiden hiçbir API anahtarı istenmez.
 ## Nasıl çalışıyor?
 
 ```
-Tarayıcı ──POST /api/suggest──▶ Cloudflare Pages Function
+Tarayıcı ──POST /api/suggest──▶ Cloudflare Worker
                                    ├─ Workers AI (anahtar yok) ya da Claude (isteğe bağlı)
                                    │    → ilginç video / dizi / film önerileri (JSON)
                                    └─ YouTube Data API (isteğe bağlı)
@@ -16,7 +16,7 @@ Tarayıcı ──POST /api/suggest──▶ Cloudflare Pages Function
 
 1. Site, seçimlerini (ruh hali, hedef, kategori, dizi filtreleri, test cevapları), süre tercihini
    ve hafızandaki izlediğin/kaydettiğin başlıkları kısa bir metne çevirip `/api/suggest`'e gönderir.
-2. `functions/api/suggest.js` bu metni yapay zekâya verir ve JSON öneri listesi alır.
+2. `worker/suggest.js` bu metni yapay zekâya verir ve JSON öneri listesi alır.
    Daha önce izlediğin ve yakın zamanda önerilenler "tekrar önerme" listesiyle gönderilir.
 3. `YOUTUBE_API_KEY` tanımlıysa her öneri YouTube'da **izlenme sayısına göre** aranır ve en üstteki
    gerçek video (başlık, kanal, kapak, izlenme) karta eklenir; kart doğrudan o videoya bağlanır.
@@ -34,17 +34,21 @@ Tarayıcı ──POST /api/suggest──▶ Cloudflare Pages Function
 - Açık/koyu/sistem teması, oturum zamanlayıcısı, YouTube'u sakinleştirme ipuçları.
 - Hafıza, kütüphane ve tercihler yalnızca tarayıcında (`localStorage`) tutulur.
 
-## Kurulum (Cloudflare Pages)
+## Kurulum (Cloudflare Workers)
 
-Site Cloudflare Pages'te `master` dalından yayınlanır. `wrangler.toml` Workers AI bağlamasını
-(`[ai] binding = "AI"`) içerdiği için **ek bir panel ayarı olmadan** yapay zekâ çalışır.
+Site bir Cloudflare Worker olarak `master` dalından yayınlanır (Workers Builds,
+`npx wrangler versions upload`). `wrangler.toml`:
 
-> `wrangler.toml` içindeki `name`, Cloudflare'deki Pages projesinin adıyla aynı olmalı
+- `main = "worker/index.js"` → `/api/suggest` isteklerini karşılar,
+- `[assets] directory = "./public"` → yalnızca `public/` klasöründeki site dosyaları yayınlanır,
+- `[ai] binding = "AI"` → Workers AI, **ek bir panel ayarı olmadan** çalışır.
+
+> `wrangler.toml` içindeki `name`, Cloudflare'deki Worker'ın adıyla aynı olmalı
 > (şu an `youtubelove`). Farklıysa dosyadaki adı düzelt.
 
 ### İsteğe bağlı gizli değişkenler
 
-Cloudflare → Workers & Pages → proje → **Settings → Variables and secrets** (Production) altına
+Cloudflare → Workers & Pages → youtubelove → **Settings → Variables and secrets** (Production) altına
 **Secret** olarak ekle, sonra yeniden dağıt:
 
 | Ad | Ne işe yarar |
@@ -73,28 +77,29 @@ Yapay zekâ uç noktası dahil tam çalıştırmak için:
 npx wrangler pages dev .
 ```
 
-Yalnızca arayüzü görmek için `python3 -m http.server 8000` da olur; ama bu durumda `/api/suggest`
+Yalnızca arayüzü görmek için `cd public && python3 -m http.server 8000` da olur; ama bu durumda `/api/suggest`
 olmadığından öneriler hata verir (Ayarlar'dan kendi anahtarını tanımlamadıysan).
 
 ## Dosya yapısı
 
 ```
-index.html                  tek sayfa, yan menülü arayüz
-assets/css/styles.css       tema ve bileşen stilleri
-functions/api/suggest.js    yapay zekâ + YouTube uç noktası (Cloudflare Pages Function)
-wrangler.toml               Workers AI bağlaması
-assets/js/aiPrompt.js       ortak istem, JSON ayrıştırma ve normalleştirme (sunucu + tarayıcı)
-assets/js/aiClient.js       /api/suggest istemcisi, kendi anahtarla yedek yol
-assets/js/llm.js            tarayıcıdan doğrudan yapay zekâ servisleri (kendi anahtar)
-assets/js/app.js            arayüz, bölümler, kartlar
-assets/js/data.js           yalnızca seçenek listeleri (ruh hali, hedef, kategori, süre)
-assets/js/shows.js          dizi filtre seçenekleri
-assets/js/library.js        izlediklerim / kaydettiklerim
-assets/js/memory.js         hafıza olayları
-assets/js/personalize.js    hafızadan yapay zekâ bağlamı üretimi
-assets/js/recHistory.js     öneri geçmişi
-assets/js/youtube.js        YouTube arama bağlantısı ve sıralama/süre filtreleri
-assets/js/ytSuggest.js      YouTube başlık tamamlama
+wrangler.toml               Worker, statik dosyalar ve Workers AI yapılandırması
+worker/index.js             Worker girişi: /api/suggest → suggest.js, gerisi public/
+worker/suggest.js           yapay zekâ + YouTube uç noktası
+public/index.html           tek sayfa, yan menülü arayüz
+public/assets/css/styles.css tema ve bileşen stilleri
+public/assets/js/aiPrompt.js       ortak istem, JSON ayrıştırma ve normalleştirme (sunucu + tarayıcı)
+public/assets/js/aiClient.js       /api/suggest istemcisi, kendi anahtarla yedek yol
+public/assets/js/llm.js            tarayıcıdan doğrudan yapay zekâ servisleri (kendi anahtar)
+public/assets/js/app.js            arayüz, bölümler, kartlar
+public/assets/js/data.js           yalnızca seçenek listeleri (ruh hali, hedef, kategori, süre)
+public/assets/js/shows.js          dizi filtre seçenekleri
+public/assets/js/library.js        izlediklerim / kaydettiklerim
+public/assets/js/memory.js         hafıza olayları
+public/assets/js/personalize.js    hafızadan yapay zekâ bağlamı üretimi
+public/assets/js/recHistory.js     öneri geçmişi
+public/assets/js/youtube.js        YouTube arama bağlantısı ve sıralama/süre filtreleri
+public/assets/js/ytSuggest.js      YouTube başlık tamamlama
 ```
 
 ## Gizlilik ve not
