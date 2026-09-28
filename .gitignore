@@ -1,2 +1,6 @@
 .wrangler/
 node_modules/
+.dev.vars
+__pycache__/
+.venv/
+scripts/probe/data/*.local.*

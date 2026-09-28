@@ -1,7 +1,7 @@
 # Cloudflare Worker yapılandırması (Workers Builds bu dosyayı okur).
 name = "youtubelove"                 # Cloudflare'deki Worker adıyla aynı olmalı
 main = "worker/index.js"
-compatibility_date = "2026-09-01"
+compatibility_date = "2026-08-15"
 
 # Statik site yalnızca public/ klasöründen yayınlanır.
 # /api/* istekleri önce Worker'a gider; diğerleri doğrudan dosyalardan sunulur.
@@ -13,6 +13,21 @@ run_worker_first = ["/api/*"]
 # Workers AI — /api/suggest önerileri buradan üretir. API anahtarı gerekmez.
 [ai]
 binding = "AI"
+
+# D1 veritabanı — kullanıcı profili, probe video havuzu, olaylar.
+# database_id yazılmadı: `wrangler deploy` / `versions upload` ilk yayında veritabanını kendisi oluşturur.
+# Migration'lar (migrations/*.sql) Worker'ın ilk isteğinde otomatik uygulanır; elle de uygulanabilir:
+#   npx wrangler d1 migrations apply youtubelove-db --remote
+[[d1_databases]]
+binding = "DB"
+database_name = "youtubelove-db"
+migrations_dir = "migrations"
+
+# migrations/*.sql dosyaları Worker'a metin olarak gömülür (worker/lib/migrate.js).
+[[rules]]
+type = "Text"
+globs = ["**/*.sql"]
+fallthrough = true
 
 # İsteğe bağlı gizli değişkenler (Cloudflare → Worker → Settings → Variables and secrets):
 #   ANTHROPIC_API_KEY  → Workers AI yerine Claude kullanılır
