@@ -3,7 +3,10 @@
 
 import { onRequestGet as suggestGet, onRequestPost as suggestPost } from "./suggest.js";
 import { getProfile, putLanguages, putTracking } from "./routes/profile.js";
+import { postImport, postRescore, getStats } from "./routes/adminProbe.js";
 import { ensureMigrated } from "./lib/migrate.js";
+import { refreshStats, recomputeScores } from "./lib/probeStore.js";
+import qualityConfig from "../config/quality.json";
 import { error } from "./lib/http.js";
 
 /** path → { METHOD: handler(context) }. `db: true` olan rotalar D1 migration'ını bekler. */
@@ -12,7 +15,22 @@ export const ROUTES = {
   "/api/profile": { db: true, GET: getProfile },
   "/api/profile/languages": { db: true, PUT: putLanguages },
   "/api/profile/tracking": { db: true, PUT: putTracking },
+  "/api/admin/probe/import": { db: true, POST: postImport },
+  "/api/admin/probe/rescore": { db: true, POST: postRescore },
+  "/api/admin/probe/stats": { db: true, GET: getStats },
 };
+
+/**
+ * Haftalık bakım (wrangler.toml [triggers]): probe havuzunun izlenme anlık görüntülerini
+ * yeniler ve kalite skorlarını yeniden hesaplar. YOUTUBE_API_KEY yoksa yalnızca yeniden hesaplar.
+ */
+export async function runMaintenance(env, now = Date.now()) {
+  if (!env.DB) return { skipped: "DB yok" };
+  await ensureMigrated(env.DB);
+  const refresh = env.YOUTUBE_API_KEY ? await refreshStats(env.DB, env.YOUTUBE_API_KEY, { now }) : null;
+  const rescore = await recomputeScores(env.DB, qualityConfig, now);
+  return { refresh, rescore };
+}
 
 export async function handleApi(request, env, ctx) {
   const url = new URL(request.url);
@@ -37,5 +55,9 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/")) return handleApi(request, env, ctx);
     return env.ASSETS.fetch(request);
+  },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runMaintenance(env, event.scheduledTime));
   },
 };

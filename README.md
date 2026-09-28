@@ -35,27 +35,28 @@ Tarayıcı ── başlığa tıklama ──▶ youtube.com/results?search_query
 
 ## Kurulum (Cloudflare Workers)
 
-Site bir Cloudflare Worker olarak `master` dalından yayınlanır (Workers Builds,
-`npx wrangler versions upload`). `wrangler.toml`:
+Site bir Cloudflare Worker olarak `master` dalından yayınlanır (Workers Builds). `wrangler.toml`:
 
-- `main = "worker/index.js"` → `/api/suggest` isteklerini karşılar,
-- `[assets] directory = "./public"` → yalnızca `public/` klasöründeki site dosyaları yayınlanır,
-- `[ai] binding = "AI"` → Workers AI, **ek bir panel ayarı olmadan** çalışır.
+- `main = "worker/index.js"` → `/api/*` isteklerini karşılar, gerisi `public/`'ten sunulur,
+- `[ai] binding = "AI"` → Workers AI, **ek bir panel ayarı olmadan** çalışır,
+- `[[d1_databases]] youtubelove-db` → ilk yayında **otomatik oluşturulur**; `migrations/*.sql`
+  Worker'ın ilk isteğinde otomatik uygulanır (elle: `npx wrangler d1 migrations apply youtubelove-db --remote`),
+- `[triggers]` → her pazartesi probe havuzunun istatistiklerini yeniler, kalite skorlarını hesaplar.
 
 > `wrangler.toml` içindeki `name`, Cloudflare'deki Worker'ın adıyla aynı olmalı
 > (şu an `youtubelove`). Farklıysa dosyadaki adı düzelt.
 
-### İsteğe bağlı gizli değişkenler
+### Gizli değişkenler
 
-Cloudflare → Workers & Pages → youtubelove → **Settings → Variables and secrets** (Production) altına
-**Secret** olarak ekle, sonra yeniden dağıt:
+Cloudflare → Workers & Pages → youtubelove → **Settings → Variables and secrets** altına
+**Secret** olarak ekle. Hiçbiri depoya yazılmaz.
 
 | Ad | Ne işe yarar |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | Workers AI yerine Claude kullanılır (Türkçe öneri kalitesi genelde daha iyi). |
+| `ANTHROPIC_API_KEY` | Öneriler, etiketleme ve çeviride Workers AI yerine Claude (`claude-opus-5`). |
 | `ANTHROPIC_MODEL` | (İsteğe bağlı) Claude model adını değiştirir. |
-
-Anahtarlar hiçbir zaman depoya yazılmaz; yalnızca sunucu tarafında kullanılır.
+| `YOUTUBE_API_KEY` | Haftalık istatistik yenileme ve çok dilli keşif. |
+| `ADMIN_TOKEN` | `/api/admin/*` uç noktaları; probe havuzunu içe aktarırken kullanılır. Uzun, rastgele bir değer seç. |
 
 ### Kendi anahtarınla (isteğe bağlı)
 
@@ -63,37 +64,67 @@ Ayarlar → "🔧 Gelişmiş: kendi yapay zekâ anahtarımı kullan" bölümünd
 tanımlarsan, sunucu yanıt vermediğinde öneriler doğrudan o servisten istenir. Anahtar yalnızca
 tarayıcında saklanır.
 
-## Yerel çalıştırma
+## Probe (sonda) video havuzu
 
-Yapay zekâ uç noktası dahil tam çalıştırmak için:
+Onboarding'de gösterilen ve profil çıkarmak için kullanılan videolar. Elle gözden geçirilir.
 
 ```bash
-npx wrangler pages dev .
+npm install
+# 1) Topla — Claude dil başına native sorgular üretir, YouTube'da arar, fastText + Claude etiketler
+YOUTUBE_API_KEY=... ANTHROPIC_API_KEY=... node scripts/probe/collect.mjs --langs tr,en
+#    (--categories muzik,gezi ile daralt; --dry-run yalnızca sorguları gösterir, YouTube kotası harcamaz)
+
+# 2) Gözden geçir — CSV'yi Excel/Sheets'te aç, status sütununu approved / rejected yap,
+#    gerekirse etiketleri düzelt (elle değişen etiket "manual" olarak işaretlenir)
+node scripts/probe/review.mjs scripts/probe/data/candidates-<zaman>.jsonl --to-csv
+node scripts/probe/review.mjs scripts/probe/data/candidates-<zaman>.jsonl --from-csv scripts/probe/data/candidates-<zaman>.csv
+
+# 3) Siteye aktar — kalite skorları sunucuda hesaplanır
+ADMIN_TOKEN=... node scripts/probe/apply.mjs scripts/probe/data/candidates-<zaman>.jsonl --site https://<site-adresi>
 ```
 
-Yalnızca arayüzü görmek için `cd public && python3 -m http.server 8000` da olur; ama bu durumda `/api/suggest`
-olmadığından öneriler hata verir (Ayarlar'dan kendi anahtarını tanımlamadıysan).
+- **Eksenler** (`worker/lib/axes.js`): kategori (sitenin kategorileri + bilim, tarih, gezi, müzik,
+  dizi/film, mizah), ton, derinlik, format, süre kovası. Ayrıca dil bağımlılığı (0-1), altyazı, clickbait.
+- **Dil**: `defaultAudioLanguage` kullanılmaz. Başlık + açıklamada fastText (lid.176); güven
+  `config/quality.json → langDetect.minConfidence` altındaysa ya da konuşma yoksa Claude'un kararı.
+- **Shorts** ve az izlenen videolar toplamada, kanal boyutu dile göre (`channelSize`) elenir.
+- **Kalite skoru** (`worker/lib/quality.js`): izlenme/abone sıradışılığı, beğeni/izlenme,
+  yorum/izlenme, evergreen (son dönem izlenme hızı / ömür boyu ortalama; haftalık anlık
+  görüntülerden), clickbait. Oranlar **dil + kategori kovası içinde percentile**'a çevrilir;
+  ağırlıklar `config/quality.json`'da.
+- **Kota**: arama başına 100 birim; script başta tahmini gösterir, 10.000'i aşarsa `--yes` ister.
+
+## Yerel çalıştırma ve testler
+
+```bash
+npm install
+npm test              # Workers çalışma zamanında (Miniflare + yerel D1) bütün testler
+npx wrangler dev      # site + API (Workers AI için Cloudflare girişi gerekir)
+```
+
+Yalnızca arayüzü görmek için `cd public && python3 -m http.server 8000` da olur; bu durumda
+`/api` olmadığından öneriler ve "Beni tanı" çalışmaz.
 
 ## Dosya yapısı
 
 ```
-wrangler.toml               Worker, statik dosyalar ve Workers AI yapılandırması
-worker/index.js             Worker girişi: /api/suggest → suggest.js, gerisi public/
-worker/suggest.js           yapay zekâ + YouTube uç noktası
-public/index.html           tek sayfa, yan menülü arayüz
-public/assets/css/styles.css tema ve bileşen stilleri
-public/assets/js/aiPrompt.js       ortak istem, JSON ayrıştırma ve normalleştirme (sunucu + tarayıcı)
-public/assets/js/aiClient.js       /api/suggest istemcisi, kendi anahtarla yedek yol
-public/assets/js/llm.js            tarayıcıdan doğrudan yapay zekâ servisleri (kendi anahtar)
-public/assets/js/app.js            arayüz, bölümler, kartlar
-public/assets/js/data.js           yalnızca seçenek listeleri (ruh hali, hedef, kategori, süre)
-public/assets/js/shows.js          dizi filtre seçenekleri
-public/assets/js/library.js        izlediklerim / kaydettiklerim
-public/assets/js/memory.js         hafıza olayları
-public/assets/js/personalize.js    hafızadan yapay zekâ bağlamı üretimi
-public/assets/js/recHistory.js     öneri geçmişi
-public/assets/js/youtube.js        YouTube arama bağlantısı ve sıralama/süre filtreleri
-public/assets/js/ytSuggest.js      YouTube başlık tamamlama
+wrangler.toml                 Worker, statik dosyalar, Workers AI, D1, cron
+migrations/*.sql              D1 şeması (Worker ilk istekte uygular)
+config/quality.json           kalite skoru ağırlıkları, kanal boyutu sınırları, dil tespiti eşiği
+worker/index.js               /api yönlendiricisi + haftalık bakım
+worker/suggest.js             /api/suggest — arama başlığı önerileri
+worker/routes/profile.js      /api/profile — dil tercihleri, olay takibi ayarı
+worker/routes/adminProbe.js   /api/admin/probe/* — havuz içe aktarma, skor, istatistik
+worker/lib/                   youtube, claude (Anthropic SDK), languages, axes, quality,
+                              probeLabel, probeStore, nativeQueries, migrate, user, http
+scripts/probe/                collect / review / apply
+test/                         vitest (@cloudflare/vitest-pool-workers)
+public/index.html             tek sayfa, yan menülü arayüz
+public/assets/js/app.js       arayüz, bölümler, kartlar
+public/assets/js/onboarding.js "Beni tanı" akışı
+public/assets/js/profileApi.js /api/profile istemcisi
+public/assets/js/aiPrompt.js  ortak öneri istemi ve ayrıştırma (sunucu + tarayıcı)
+public/assets/js/…            diğer arayüz modülleri (kütüphane, hafıza, geçmiş, YouTube bağlantıları)
 ```
 
 ## Gizlilik ve not

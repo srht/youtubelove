@@ -6,10 +6,12 @@
 
 import m0001 from "../../migrations/0001_init.sql";
 import m0002 from "../../migrations/0002_user_languages.sql";
+import m0003 from "../../migrations/0003_probe_pool.sql";
 
 export const MIGRATIONS = [
   { name: "0001_init.sql", sql: m0001 },
   { name: "0002_user_languages.sql", sql: m0002 },
+  { name: "0003_probe_pool.sql", sql: m0003 },
 ];
 
 /** SQL dosyasını tek tek ifadelere böler (yorum satırlarını atar). */

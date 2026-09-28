@@ -10,7 +10,9 @@
 // GET  /api/suggest → yapay zekânın açık olup olmadığını söyler (sağlık kontrolü).
 // POST /api/suggest → { context, focus, count, avoid, lucky } → { suggestions, provider }
 
+import { createClaude, askClaude, DEFAULT_CLAUDE_MODEL } from "./lib/claude.js";
 import {
+  AI_CATEGORIES,
   SYSTEM_PROMPT,
   buildUserPrompt,
   normalizeSuggestions,
@@ -21,7 +23,6 @@ const WORKERS_AI_MODELS = [
   "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
   "@cf/meta/llama-3.1-8b-instruct",
 ];
-const DEFAULT_ANTHROPIC_MODEL = "claude-opus-5";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -62,29 +63,40 @@ async function askWorkersAi(env, system, user) {
   throw lastError ?? new Error("Yapay zekâ yanıt vermedi.");
 }
 
-async function askAnthropic(env, system, user) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
+/** Claude'dan şemaya uyan öneri listesi ister (JSON ayrıştırma hatası olmaz). */
+export const SUGGESTION_SCHEMA = {
+  type: "object",
+  properties: {
+    suggestions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          query: { type: "string" },
+          why: { type: "string" },
+          kind: { type: "string", enum: ["video", "dizi", "film"] },
+          category: { type: "string", enum: AI_CATEGORIES },
+          year: { type: "string" },
+        },
+        required: ["title", "query", "why", "kind", "category", "year"],
+        additionalProperties: false,
+      },
     },
-    body: JSON.stringify({
-      model: env.ANTHROPIC_MODEL || DEFAULT_ANTHROPIC_MODEL,
-      max_tokens: 8000,
-      system,
-      messages: [{ role: "user", content: user }],
-    }),
+  },
+  required: ["suggestions"],
+  additionalProperties: false,
+};
+
+async function askAnthropic(env, system, user) {
+  const client = createClaude({ apiKey: env.ANTHROPIC_API_KEY });
+  const result = await askClaude(client, {
+    system,
+    user,
+    schema: SUGGESTION_SCHEMA,
+    model: env.ANTHROPIC_MODEL || DEFAULT_CLAUDE_MODEL,
   });
-  const data = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new Error(`Anthropic ${response.status}: ${data?.error?.message ?? "bilinmeyen hata"}`);
-  }
-  return (data?.content ?? [])
-    .filter((block) => block?.type === "text")
-    .map((block) => block.text)
-    .join("\n");
+  return result.suggestions;
 }
 
 // --- İstek işleyicileri ----------------------------------------------------
@@ -128,11 +140,11 @@ export async function onRequestPost({ request, env }) {
   let suggestions;
   try {
     const user = buildUserPrompt(options);
-    const text =
+    const raw =
       provider === "anthropic"
         ? await askAnthropic(env, SYSTEM_PROMPT, user)
-        : await askWorkersAi(env, SYSTEM_PROMPT, user);
-    suggestions = normalizeSuggestions(parseJsonArray(text), count);
+        : parseJsonArray(await askWorkersAi(env, SYSTEM_PROMPT, user));
+    suggestions = normalizeSuggestions(raw, count);
   } catch (error) {
     return json({ error: `Yapay zekâ öneri üretemedi: ${error.message}` }, 502);
   }

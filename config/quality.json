@@ -1,0 +1,19 @@
+{
+  "_doc": "Kalite / gizli cevher skoru ayarları. worker/lib/quality.js ve scripts/probe okur.",
+  "weights": {
+    "outlier": 0.30,
+    "likeRate": 0.20,
+    "commentRate": 0.10,
+    "evergreen": 0.20,
+    "clickbait": 0.20
+  },
+  "minBucketSize": 8,
+  "minViews": 1000,
+  "channelSize": {
+    "default": { "minSubscribers": 1000, "maxSubscribers": 5000000 },
+    "tr": { "minSubscribers": 500, "maxSubscribers": 3000000 },
+    "en": { "minSubscribers": 5000, "maxSubscribers": 20000000 }
+  },
+  "evergreen": { "minAgeDays": 180, "minSnapshotGapDays": 7 },
+  "langDetect": { "minConfidence": 0.7 }
+}
