@@ -1,7 +1,11 @@
 import { env } from "cloudflare:workers";
 import { handleApi } from "../worker/index.js";
 
-/** /api isteğini doğrudan yönlendiriciye verir; `overrides` ile env parçaları değiştirilebilir. */
+/**
+ * /api isteğini doğrudan yönlendiriciye verir; `overrides` ile env parçaları değiştirilebilir.
+ * Workers AI testlerde uzak bağlantı gerektirdiği için varsayılan olarak kapalıdır; gereken test
+ * kendi sahte `AI`'sını verir.
+ */
 export async function api(path, { method = "GET", body, cookie, headers = {}, overrides = {} } = {}) {
   const request = new Request(`https://test.local${path}`, {
     method,
@@ -13,7 +17,7 @@ export async function api(path, { method = "GET", body, cookie, headers = {}, ov
     body: body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
   });
   const ctx = { waitUntil() {}, passThroughOnException() {} };
-  return handleApi(request, { ...env, ...overrides }, ctx);
+  return handleApi(request, { ...env, AI: undefined, ...overrides }, ctx);
 }
 
 /** Set-Cookie'deki yl_uid değerini "yl_uid=..." biçiminde döndürür. */

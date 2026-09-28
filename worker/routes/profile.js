@@ -2,6 +2,7 @@
 
 import { json, error, readJson, withCookie } from "../lib/http.js";
 import { getOrCreateUser } from "../lib/user.js";
+import { recomputeProfile } from "../lib/profileUpdate.js";
 import {
   LANGUAGES, LEVEL_PRIORS, defaultLanguagesFrom, languageWeight, validateLanguageInput,
 } from "../lib/languages.js";
@@ -84,6 +85,10 @@ export async function putLanguages({ request, env }) {
     }
   }
   await env.DB.batch(statements);
+
+  // Davranış sinyali varsa dil ağırlıkları yeni seviyelerin önseli + sinyallerden yeniden hesaplanır
+  const signals = await env.DB.prepare("SELECT count(*) AS n FROM video_signals WHERE user_id = ?").bind(user.id).first();
+  if (signals.n > 0) await recomputeProfile(env.DB, user.id, now);
 
   const languages = await loadLanguages(env.DB, user.id);
   return withCookie(json(profileBody(user, languages, request)), cookie);

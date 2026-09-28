@@ -140,14 +140,14 @@ function showStep(step) {
   document.getElementById("onbDone").hidden = step !== "done";
 }
 
-async function stopPreview(reason) {
+/** Önizlemeyi durdurur. Oynatıcı hazırsa senkron çalışır (sekme kapanırken çıkış anı kaybolmasın). */
+function stopPreview(reason) {
   const current = round.preview;
   round.preview = null;
-  if (current) {
-    const handle = await current.handle.catch(() => null);
-    handle?.stop(reason);
-    current.card.classList.remove("is-previewing");
-  }
+  if (!current) return;
+  current.card.classList.remove("is-previewing");
+  if (current.resolved) current.resolved.stop(reason);
+  else current.handle.then((h) => h?.stop(reason)).catch(() => {});
 }
 
 function playPreview(cardEl, card, position) {
@@ -156,7 +156,11 @@ function playPreview(cardEl, card, position) {
   cardEl.classList.add("is-previewing");
   const meta = { surface: "onboarding", round: round.number, position };
   const handle = startPreview(cardEl.querySelector(".onb-thumb"), { videoId: card.videoId, start: card.previewStart, meta });
-  round.preview = { card: cardEl, handle };
+  const entry = { card: cardEl, handle, resolved: null };
+  round.preview = entry;
+  handle.then((h) => {
+    entry.resolved = h;
+  });
   handle.catch(() => {
     cardEl.classList.remove("is-previewing");
     if (round.preview?.card === cardEl) round.preview = null;
@@ -342,7 +346,11 @@ export function initOnboarding({ switchTab }) {
   document.getElementById("onbNext").addEventListener("click", nextRound);
   document.getElementById("onbRestart").addEventListener("click", restartRounds);
   document.getElementById("onbAgain").addEventListener("click", restartRounds);
-  // Bölümden çıkınca önizleme dursun
+  // Sekme gizlenince önizleme dursun (çıkış anı kaydedilsin), bölümden çıkınca da
+  // capture: olay kuyruğunun çıkış gönderiminden (events.js) ÖNCE çalışsın
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && round.preview) stopPreview("hidden");
+  }, { capture: true });
   document.addEventListener("click", (event) => {
     if (event.target.closest(".menu-item") && round.preview) stopPreview("navigate");
   });

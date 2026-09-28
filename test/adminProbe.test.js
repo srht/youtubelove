@@ -86,9 +86,13 @@ describe("haftalık bakım", () => {
     expect(ch.subscribers).toBe(4242);
   });
 
-  it("anahtar yoksa yalnızca yeniden skorlar", async () => {
-    const result = await runMaintenance({ ...env, YOUTUBE_API_KEY: undefined });
+  it("anahtar yoksa yalnızca yeniden skorlar; embedding'leri üretir", async () => {
+    const AI = { run: async (_m, input) => ({ data: input.text.map(() => [1, 0, 0]) }) };
+    const result = await runMaintenance({ ...env, YOUTUBE_API_KEY: undefined, AI });
     expect(result.refresh).toBeNull();
     expect(result.rescore.scored).toBeGreaterThanOrEqual(0);
+    expect(result.embedding.embedded).toBeGreaterThan(0);
+    const left = await env.DB.prepare("SELECT count(*) AS n FROM probe_videos WHERE status = 'approved' AND embedding IS NULL").first();
+    expect(left.n).toBe(0);
   });
 });

@@ -182,7 +182,7 @@ export async function openWatchDialog({ videoId, title, meta, onClose }) {
     }
     if (dialog.open) dialog.close();
     dialog.remove();
-    document.removeEventListener("visibilitychange", onHidden);
+    document.removeEventListener("visibilitychange", onHidden, { capture: true });
     onClose?.();
   };
   const onHidden = () => {
@@ -193,7 +193,8 @@ export async function openWatchDialog({ videoId, title, meta, onClose }) {
     e.preventDefault();
     close("escape");
   });
-  document.addEventListener("visibilitychange", onHidden);
+  // capture: çıkış olayı, olay kuyruğunun sayfa gizlenirken yaptığı gönderimden önce eklensin
+  document.addEventListener("visibilitychange", onHidden, { capture: true });
   if (typeof dialog.showModal === "function") dialog.showModal();
   else dialog.setAttribute("open", "");
   closeBtn.focus();

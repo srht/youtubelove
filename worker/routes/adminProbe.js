@@ -3,6 +3,7 @@
 import { json, error, readJson } from "../lib/http.js";
 import { requireAdmin } from "../lib/admin.js";
 import { importRows, recomputeScores, MAX_IMPORT_ROWS } from "../lib/probeStore.js";
+import { embedMissing } from "../lib/embeddings.js";
 import qualityConfig from "../../config/quality.json";
 
 export async function postImport({ request, env }) {
@@ -14,7 +15,9 @@ export async function postImport({ request, env }) {
 
   const result = await importRows(env.DB, body.rows);
   const rescore = body.rescore === false ? null : await recomputeScores(env.DB, qualityConfig);
-  return json({ ...result, scored: rescore?.scored ?? null });
+  // Yeni onaylı videoların embedding'leri (Workers AI yoksa ya da hata olursa haftalık bakımda tekrar denenir)
+  const embedding = await embedMissing(env).catch((err) => ({ embedded: 0, error: err.message }));
+  return json({ ...result, scored: rescore?.scored ?? null, embedded: embedding.embedded });
 }
 
 export async function postRescore({ request, env }) {
