@@ -7,6 +7,7 @@
 
 import { generateLlmSuggestions } from "./llm.js";
 import { isLlmReady } from "./llmSettings.js";
+import { getProfile } from "./profileApi.js";
 
 const ENDPOINT = "/api/suggest";
 const TIMEOUT_MS = 60_000;
@@ -52,7 +53,10 @@ export async function getSuggestions(options) {
   }
 
   if (isLlmReady()) {
-    const suggestions = await generateLlmSuggestions(options.context ?? "", options);
+    // Sunucu yokken de dil tercihleri (daha önce yüklendiyse) isteme girsin
+    const profile = await getProfile();
+    const languages = profile?.languages ?? [];
+    const suggestions = await generateLlmSuggestions(options.context ?? "", { ...options, languages });
     return { suggestions, provider: "own-key" };
   }
   throw new Error(serverError);

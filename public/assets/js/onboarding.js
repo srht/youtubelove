@@ -103,7 +103,7 @@ async function submitLanguages(event) {
     state.profile = await saveLanguages(languages);
     const tracking = document.getElementById("onbTracking").checked;
     if (tracking !== state.profile.trackingEnabled) state.profile = await setTracking(tracking);
-    setStatus("Kaydedildi ✅ Dil tercihlerin profiline işlendi.", "success");
+    setStatus("Kaydedildi ✅ Öneriler artık bu dillerde, o dilin kendi aramalarıyla gelecek.", "success");
     writeDismissed();
     document.dispatchEvent(new CustomEvent("yl:onboarding-step", { detail: { step: "languages" } }));
   } catch (err) {

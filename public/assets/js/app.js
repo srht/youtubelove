@@ -4,6 +4,7 @@
 // içeriği yoktur; yalnızca seçenekler, akış ve kartların çizimi vardır.
 
 import { el } from "./dom.js";
+import { LANGUAGES } from "./languageList.js";
 import { initOnboarding, maybeStartOnboarding } from "./onboarding.js";
 import { CATEGORIES, MOODS, GOALS, DURATIONS, ENERGY_LEVELS } from "./data.js";
 import {
@@ -589,6 +590,13 @@ function refreshVisibleLinks() {
   });
 }
 
+/** Türkçe olmayan öneriler için dil rozeti ("🌐 EN"), ekran okuyucuya dilin adıyla. */
+function langBadge(lang) {
+  if (!lang || lang === "tr") return null;
+  const name = LANGUAGES.find((l) => l.code === lang)?.name ?? lang;
+  return el("span", { class: "lang-badge", title: name, "aria-label": `Dil: ${name}`, text: `🌐 ${lang.toUpperCase()}` });
+}
+
 /** Bir öneriyi, tıklanınca YouTube arama sayfasını açan bir arama başlığı satırı olarak çizer. */
 function renderAiCard(item, { note = null, onRemove = null } = {}) {
   const isVideoLink = Boolean(item.video?.id);
@@ -635,6 +643,7 @@ function renderAiCard(item, { note = null, onRemove = null } = {}) {
   }, [
     el("span", { class: "search-icon", "aria-hidden": "true", text: isVideoLink ? "▶" : "🔍" }),
     el("span", { class: "search-title", text: item.title }),
+    langBadge(item.lang),
     el("span", { class: "search-arrow", "aria-hidden": "true", text: "↗" }),
   ]);
   if (!isVideoLink) link.dataset.query = item.query;
@@ -650,6 +659,7 @@ function renderAiCard(item, { note = null, onRemove = null } = {}) {
   const row = el("article", { class: `search-item${isWatched(item.id) ? " is-watched" : ""}` }, [
     note ? el("p", { class: "reason-note", text: note }) : null,
     link,
+    item.gloss ? el("p", { class: "search-gloss", text: `Türkçesi: ${item.gloss}` }) : null,
     item.why ? el("p", { class: "search-why", text: item.why }) : null,
     el("div", { class: "search-foot" }, [
       el("span", { class: "search-meta muted", text: meta }),

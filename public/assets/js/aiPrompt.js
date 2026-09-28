@@ -6,6 +6,7 @@
 // dokunmaz.
 
 import { CATEGORIES } from "./data.js";
+import { LANGUAGES } from "./languageList.js";
 
 /** Önerilerin kütüphanede gruplanacağı başlıklar — model bunlardan birini seçer. */
 export const AI_CATEGORIES = [
@@ -30,8 +31,9 @@ Kurallar:
 - Yanıtın SADECE geçerli bir JSON dizisi olsun. Açıklama, selamlama, markdown çiti ekleme.
 - Her öge şu alanlara sahip olsun:
   {"title": "YouTube'da aranacak başlık", "query": "arama kutusuna yazılacak metin",
-   "why": "neden bu kişiye iyi gelir (tek kısa cümle)",
-   "kind": "video" | "dizi" | "film", "category": "<kategori>", "year": "dizi/film ise yapım yılı, yoksa boş"}
+   "why": "neden bu kişiye iyi gelir (tek kısa Türkçe cümle)",
+   "kind": "video" | "dizi" | "film", "category": "<kategori>", "year": "dizi/film ise yapım yılı, yoksa boş",
+   "lang": "aramanın dili (ISO 639-1, ör. tr, en)", "gloss": "lang tr değilse başlığın Türkçe anlamı, değilse boş"}
 - "title" kısa, net, doğrudan aranabilir bir ifade olsun (2-7 kelime). "query" çoğunlukla title ile
   aynı olabilir; gerekirse "belgesel", "tam bölüm", "rehberli", "1. bölüm" gibi eklerle netleştir.
 - "category" şu listeden BİRİ olsun: ${AI_CATEGORIES.join(" | ")}
@@ -39,7 +41,9 @@ Kurallar:
   uydurma ad yazma.
 - İlginç ol: klişe "motivasyon videosu" aramaları yerine merak uyandıran belgeseller, kült
   diziler, unutulmuş klasikler, etkileyici konuşmalar, iyi anlatılmış bilim/tarih konuları.
-- Türkçe aramalar ağırlıklı olsun; uygun düştüğünde yabancı yapımlar da olabilir.
+- Kullanıcının dilleri verilmişse yalnızca o dillerde arama öner; verilmemişse Türkçe ağırlıklı ol.
+- Türkçe olmayan bir arama, Türkçe bir aramanın çevirisi OLMASIN: o dili konuşan birinin YouTube'a
+  gerçekten yazacağı, o kültürün kendi yapımcılarını, türlerini ve deyişlerini bulduran ifade olsun.
 - Çeşitlilik olsun: başlıklar aynı konunun tekrarı olmasın.
 - Tıbbi tavsiye verme, tanı koyma. Sansasyonel, öfke ya da kaygı pompalayan aramalar önerme.
 - "why" alanı kullanıcıya "sen" diye hitap etsin ve kısa olsun.`;
@@ -52,11 +56,34 @@ export const FOCUS_INSTRUCTIONS = {
 };
 
 /** Modele gidecek kullanıcı mesajını kurar. */
-export function buildUserPrompt({ context = "", focus = "any", count = 6, avoid = [], lucky = false }) {
+const LEVEL_TEXT = { fluent: "rahat anlıyor", subtitles: "altyazıyla izleyebiliyor" };
+
+/**
+ * Kullanıcının dillerini isteme ekler. Ağırlıklar (izleme davranışından öğrenilen) yaklaşık
+ * dağılım olarak verilir; altyazıyla izlenen dillerde görsel anlatımı güçlü içerik istenir.
+ * @param {Array<{lang:string, level:"fluent"|"subtitles", weight?:number}>} languages
+ */
+export function languageInstructions(languages) {
+  if (!Array.isArray(languages) || languages.length === 0) return "";
+  const total = languages.reduce((sum, l) => sum + (l.weight ?? 0.5), 0) || 1;
+  const lines = languages.map((l) => {
+    const name = LANGUAGES.find((x) => x.code === l.lang)?.name ?? l.lang;
+    const share = Math.round(((l.weight ?? 0.5) / total) * 100);
+    return `- ${name} (${l.lang}): ${LEVEL_TEXT[l.level] ?? l.level}; önerilerdeki payı yaklaşık %${share}`;
+  });
+  return [
+    "Kullanıcının izleyebildiği diller (bunların dışında dil önerme):",
+    ...lines,
+    "Altyazıyla izlenen dillerde görüntünün de çok şey anlattığı ya da o dilde gerçekten öne çıkan içerikleri seç.",
+  ].join("\n");
+}
+
+export function buildUserPrompt({ context = "", focus = "any", count = 6, avoid = [], lucky = false, languages = [] }) {
   return [
     "Kullanıcı ve arama bağlamı:",
     context || "(Belirgin bir bağlam yok — genel ama ilginç öneriler ver.)",
     "",
+    languageInstructions(languages),
     FOCUS_INSTRUCTIONS[focus] ?? FOCUS_INSTRUCTIONS.any,
     lucky
       ? "Bu bir 'şansımı dene' isteği: tahmin edilemez, şaşırtıcı ama izlemeye kesinlikle değer bir şey seç."
@@ -91,6 +118,7 @@ export function normalizeSuggestions(raw, count = 6) {
         ? item.category
         : kind === "dizi" ? "Dizi" : kind === "film" ? "Film" : "Belgesel";
       const title = String(item.title).trim().slice(0, 120);
+      const lang = /^[a-z]{2}$/.test(String(item.lang ?? "").toLowerCase()) ? String(item.lang).toLowerCase() : "tr";
       return {
         id: `${kind}-${slugify(title)}`,
         title,
@@ -99,6 +127,8 @@ export function normalizeSuggestions(raw, count = 6) {
         kind,
         category,
         year: item.year ? String(item.year).slice(0, 12) : "",
+        lang,
+        gloss: lang !== "tr" && typeof item.gloss === "string" ? item.gloss.trim().slice(0, 160) : "",
       };
     })
     .filter((item) => item.title && item.query)

@@ -11,6 +11,9 @@
 // POST /api/suggest → { context, focus, count, avoid, lucky } → { suggestions, provider }
 
 import { createClaude, askClaude, DEFAULT_CLAUDE_MODEL } from "./lib/claude.js";
+import { readUid } from "./lib/user.js";
+import { ensureMigrated } from "./lib/migrate.js";
+import { languageWeight } from "./lib/languages.js";
 import {
   AI_CATEGORIES,
   SYSTEM_PROMPT,
@@ -78,8 +81,10 @@ export const SUGGESTION_SCHEMA = {
           kind: { type: "string", enum: ["video", "dizi", "film"] },
           category: { type: "string", enum: AI_CATEGORIES },
           year: { type: "string" },
+          lang: { type: "string" },
+          gloss: { type: "string" },
         },
-        required: ["title", "query", "why", "kind", "category", "year"],
+        required: ["title", "query", "why", "kind", "category", "year", "lang", "gloss"],
         additionalProperties: false,
       },
     },
@@ -97,6 +102,25 @@ async function askAnthropic(env, system, user) {
     model: env.ANTHROPIC_MODEL || DEFAULT_CLAUDE_MODEL,
   });
   return result.suggestions;
+}
+
+/**
+ * Çerezdeki kullanıcının dil tercihlerini (öğrenilmiş ağırlıklarıyla) okur. Kullanıcı ya da
+ * veritabanı yoksa boş liste — istem o zaman Türkçe ağırlıklı kalır. Yeni kullanıcı OLUŞTURMAZ.
+ */
+export async function userLanguages(request, env) {
+  const uid = readUid(request);
+  if (!uid || !env.DB) return [];
+  try {
+    await ensureMigrated(env.DB);
+    const { results } = await env.DB
+      .prepare("SELECT lang, level, alpha, beta FROM user_languages WHERE user_id = ? ORDER BY level, lang")
+      .bind(uid)
+      .all();
+    return results.map((r) => ({ lang: r.lang, level: r.level, weight: languageWeight(r) }));
+  } catch {
+    return []; // dil bilgisi olmadan da öneri verilebilir
+  }
 }
 
 // --- İstek işleyicileri ----------------------------------------------------
@@ -135,6 +159,7 @@ export async function onRequestPost({ request, env }) {
     count,
     avoid: (Array.isArray(body.avoid) ? body.avoid : []).map((x) => String(x).slice(0, 120)).slice(0, 40),
     lucky: Boolean(body.lucky),
+    languages: await userLanguages(request, env),
   };
 
   let suggestions;
@@ -151,6 +176,13 @@ export async function onRequestPost({ request, env }) {
 
   if (suggestions.length === 0) {
     return json({ error: "Yapay zekâ bu sefer öneri üretemedi, tekrar dene." }, 502);
+  }
+
+  // Kullanıcının seçmediği bir dilde gelen öneriyi at (model talimata uymadıysa)
+  if (options.languages.length) {
+    const allowed = new Set(options.languages.map((l) => l.lang));
+    const filtered = suggestions.filter((s) => allowed.has(s.lang));
+    if (filtered.length) suggestions = filtered;
   }
 
   return json({ suggestions, provider });

@@ -1325,3 +1325,23 @@ h2, h3 {
   .segmented { display: grid; grid-template-columns: repeat(3, 1fr); }
   .seg span { padding: 8px 4px; font-size: 0.8rem; }
 }
+
+/* --- Çok dilli öneriler --------------------------------------------------- */
+.lang-badge {
+  flex: none;
+  align-self: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.search-gloss {
+  margin: 0;
+  padding-left: 28px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
