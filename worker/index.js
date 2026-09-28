@@ -4,6 +4,7 @@
 import { onRequestGet as suggestGet, onRequestPost as suggestPost } from "./suggest.js";
 import { getProfile, putLanguages, putTracking } from "./routes/profile.js";
 import { postImport, postRescore, getStats } from "./routes/adminProbe.js";
+import { postNext, postReset } from "./routes/onboarding.js";
 import { ensureMigrated } from "./lib/migrate.js";
 import { refreshStats, recomputeScores } from "./lib/probeStore.js";
 import qualityConfig from "../config/quality.json";
@@ -15,6 +16,8 @@ export const ROUTES = {
   "/api/profile": { db: true, GET: getProfile },
   "/api/profile/languages": { db: true, PUT: putLanguages },
   "/api/profile/tracking": { db: true, PUT: putTracking },
+  "/api/onboarding/next": { db: true, POST: postNext },
+  "/api/onboarding/reset": { db: true, POST: postReset },
   "/api/admin/probe/import": { db: true, POST: postImport },
   "/api/admin/probe/rescore": { db: true, POST: postRescore },
   "/api/admin/probe/stats": { db: true, GET: getStats },

@@ -119,6 +119,33 @@
       </div>
       <p id="onbStatus" class="form-status" role="status"></p>
     </form>
+
+    <section id="onbRounds" class="onb-step" hidden aria-labelledby="onbRoundTitle">
+      <div class="onb-round-head">
+        <h3 id="onbRoundTitle">2. Neler ilgini çekiyor?</h3>
+        <span id="onbRoundProgress" class="badge badge-soft"></span>
+      </div>
+      <p class="muted">
+        Seçim yapman gerekmiyor. İlgini çekenin üzerine gel (telefonda dokun): <strong>sessiz bir önizleme</strong>
+        oynar. İstersen ▶ ile izle. Neye ne kadar baktığından öğreniyoruz.
+      </p>
+      <p id="onbFocus" class="muted onb-focus" hidden></p>
+      <div id="onbGrid" class="onb-grid" aria-live="polite"></div>
+      <div class="result-actions">
+        <button type="button" id="onbNext" class="btn btn-primary">Sonraki tur →</button>
+        <button type="button" id="onbRestart" class="btn btn-ghost btn-small">Baştan başla</button>
+      </div>
+      <p id="onbRoundStatus" class="form-status" role="status"></p>
+    </section>
+
+    <section id="onbDone" class="onb-step onb-done" hidden>
+      <h3>Profilin hazır ✨</h3>
+      <p id="onbDoneText" class="muted">Önerilerin artık izleme davranışına göre şekillenecek.</p>
+      <div class="result-actions">
+        <button type="button" class="btn btn-primary" data-goto="foryou">Sana Özel önerilere git →</button>
+        <button type="button" id="onbAgain" class="btn btn-ghost btn-small">Birkaç tur daha</button>
+      </div>
+    </section>
   </section>
 
   <!-- ---- Sana Özel ---- -->

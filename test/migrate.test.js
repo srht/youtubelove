@@ -10,6 +10,13 @@ describe("migration'lar", () => {
     ]);
   });
 
+  it("satır içi yorumdaki ve dizedeki ; ile -- karakterlerini doğru işler", () => {
+    expect(splitStatements("CREATE TABLE a (x TEXT, -- not; yorum\n y TEXT);\nINSERT INTO a VALUES ('a;b--c', 'it''s');")).toEqual([
+      "CREATE TABLE a (x TEXT, \n y TEXT)",
+      "INSERT INTO a VALUES ('a;b--c', 'it''s')",
+    ]);
+  });
+
   it("boş veritabanına hepsini uygular ve wrangler tablosuna yazar", async () => {
     await ensureMigrated(env.DB);
     const { results } = await env.DB.prepare("SELECT name FROM d1_migrations ORDER BY id").all();

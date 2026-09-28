@@ -7,22 +7,46 @@
 import m0001 from "../../migrations/0001_init.sql";
 import m0002 from "../../migrations/0002_user_languages.sql";
 import m0003 from "../../migrations/0003_probe_pool.sql";
+import m0004 from "../../migrations/0004_onboarding.sql";
 
 export const MIGRATIONS = [
   { name: "0001_init.sql", sql: m0001 },
   { name: "0002_user_languages.sql", sql: m0002 },
   { name: "0003_probe_pool.sql", sql: m0003 },
+  { name: "0004_onboarding.sql", sql: m0004 },
 ];
 
-/** SQL dosyasını tek tek ifadelere böler (yorum satırlarını atar). */
+/**
+ * SQL dosyasını ifadelere böler. `--` yorumlarını (satır içi dahil) atar; tek tırnaklı
+ * dizelerin içindeki `;` ve `--` karakterlerine dokunmaz.
+ */
 export function splitStatements(sql) {
-  return sql
-    .split("\n")
-    .filter((line) => !line.trim().startsWith("--"))
-    .join("\n")
-    .split(";")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const statements = [];
+  let current = "";
+  let inString = false;
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i];
+    if (inString) {
+      current += ch;
+      if (ch === "'") {
+        if (sql[i + 1] === "'") current += sql[++i]; // '' kaçışı
+        else inString = false;
+      }
+    } else if (ch === "'") {
+      inString = true;
+      current += ch;
+    } else if (ch === "-" && sql[i + 1] === "-") {
+      while (i < sql.length && sql[i] !== "\n") i++;
+      current += "\n";
+    } else if (ch === ";") {
+      if (current.trim()) statements.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  if (current.trim()) statements.push(current.trim());
+  return statements;
 }
 
 async function applyPending(db) {
