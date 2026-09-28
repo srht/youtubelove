@@ -2,12 +2,16 @@
 // /api/* istekleri aşağıdaki yönlendiriciye, geri kalan her şey statik dosyalara (public/) gider.
 
 import { onRequestGet as suggestGet, onRequestPost as suggestPost } from "./suggest.js";
+import { getProfile, putLanguages, putTracking } from "./routes/profile.js";
 import { ensureMigrated } from "./lib/migrate.js";
 import { error } from "./lib/http.js";
 
 /** path → { METHOD: handler(context) }. `db: true` olan rotalar D1 migration'ını bekler. */
 export const ROUTES = {
   "/api/suggest": { GET: suggestGet, POST: suggestPost },
+  "/api/profile": { db: true, GET: getProfile },
+  "/api/profile/languages": { db: true, PUT: putLanguages },
+  "/api/profile/tracking": { db: true, PUT: putTracking },
 };
 
 export async function handleApi(request, env, ctx) {

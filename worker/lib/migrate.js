@@ -5,8 +5,12 @@
 // Böylece Cloudflare panelinden yayın yapan site sahibinin elle komut çalıştırması gerekmez.
 
 import m0001 from "../../migrations/0001_init.sql";
+import m0002 from "../../migrations/0002_user_languages.sql";
 
-export const MIGRATIONS = [{ name: "0001_init.sql", sql: m0001 }];
+export const MIGRATIONS = [
+  { name: "0001_init.sql", sql: m0001 },
+  { name: "0002_user_languages.sql", sql: m0002 },
+];
 
 /** SQL dosyasını tek tek ifadelere böler (yorum satırlarını atar). */
 export function splitStatements(sql) {

@@ -3,6 +3,8 @@
 // Bütün öneriler yapay zekâdan gelir (aiClient.js → /api/suggest). Bu dosyada öneri
 // içeriği yoktur; yalnızca seçenekler, akış ve kartların çizimi vardır.
 
+import { el } from "./dom.js";
+import { initOnboarding, maybeStartOnboarding } from "./onboarding.js";
 import { CATEGORIES, MOODS, GOALS, DURATIONS, ENERGY_LEVELS } from "./data.js";
 import {
   SHOW_ERAS, SHOW_GENRES, SHOW_MOODS, SHOW_ORIGINS, SHOW_TYPES, SHOW_INTENSITIES,
@@ -38,27 +40,10 @@ const state = {
   showFilters: { era: null, genre: null, mood: null, origin: null, type: null, intensity: null },
 };
 
-const TAB_IDS = ["foryou", "quick", "quiz", "categories", "shows", "library", "tips", "settings"];
+const TAB_IDS = ["onboarding", "foryou", "quick", "quiz", "categories", "shows", "library", "tips", "settings"];
 const MOBILE_QUERY = "(max-width: 899px)";
 
 const labelOf = (list, id) => list.find((x) => x.id === id)?.label ?? id;
-
-function el(tag, attrs = {}, children = []) {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(attrs)) {
-    if (key === "class") node.className = value;
-    else if (key === "text") node.textContent = value;
-    else if (key.startsWith("on") && typeof value === "function") {
-      node.addEventListener(key.slice(2).toLowerCase(), value);
-    } else if (value !== null && value !== undefined) {
-      node.setAttribute(key, value);
-    }
-  }
-  for (const child of [].concat(children)) {
-    if (child) node.appendChild(child);
-  }
-  return node;
-}
 
 function isMobileLayout() {
   return window.matchMedia(MOBILE_QUERY).matches;
@@ -1341,6 +1326,7 @@ function init() {
   initForYouTab();
   initLibraryTab();
   initSettingsTab();
+  initOnboarding({ switchTab });
   updateLibraryCount();
 
   const previousProfile = getQuizProfile();
@@ -1353,6 +1339,9 @@ function init() {
   if (hash === "lucky" || (getLuckyStart() && opensOnForYou)) {
     switchTab("foryou", { scrollTop: false });
     showLuckyPick();
+  } else if (opensOnForYou) {
+    // İlk ziyarette (dil seçilmemişse) kısa tanışma adımlarıyla başla.
+    maybeStartOnboarding();
   }
 }
 

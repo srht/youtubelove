@@ -41,6 +41,9 @@
 
     <nav class="menu" role="tablist" aria-orientation="vertical" aria-label="Bölümler">
       <p class="menu-group-title">Öneri al</p>
+      <button type="button" class="menu-item" id="tab-onboarding" role="tab" aria-selected="false" aria-controls="panel-onboarding" tabindex="-1">
+        <span class="menu-icon" aria-hidden="true">🧭</span><span class="menu-label">Beni tanı</span>
+      </button>
       <button type="button" class="menu-item" id="tab-foryou" role="tab" aria-selected="true" aria-controls="panel-foryou">
         <span class="menu-icon" aria-hidden="true">✨</span><span class="menu-label">Sana Özel</span>
       </button>
@@ -90,6 +93,33 @@
   </aside>
 
   <main id="main" class="content">
+
+  <!-- ---- Beni tanı (onboarding) ---- -->
+  <section id="panel-onboarding" class="tab-panel" role="tabpanel" aria-labelledby="tab-onboarding" hidden>
+    <div class="panel-head">
+      <h2>🧭 Beni tanı</h2>
+      <p class="muted">Birkaç kısa adımda neyi sevdiğini öğrenelim; öneriler sana göre şekillensin.</p>
+    </div>
+
+    <p id="onbUnavailable" class="muted" hidden>
+      Bu bölüm sitenin sunucusuyla çalışır; şu an sunucuya ulaşılamıyor.
+    </p>
+
+    <form id="onbLangForm" class="onb-step" hidden>
+      <h3>1. Hangi dillerde izleyebilirsin?</h3>
+      <p id="onbLangHint" class="muted"></p>
+      <div id="onbLanguages" class="lang-list"></div>
+      <label class="lucky-start" for="onbTracking">
+        <input type="checkbox" id="onbTracking" checked />
+        <span>İzleme davranışımdan öğrensin (hangi önizlemeleri ne kadar izlediğim). Kapatırsan yalnızca seçimlerin kullanılır.</span>
+      </label>
+      <div class="result-actions">
+        <button type="submit" id="onbSave" class="btn btn-primary">Kaydet ve devam et</button>
+        <button type="button" id="onbSkip" class="btn btn-ghost">Şimdilik atla</button>
+      </div>
+      <p id="onbStatus" class="form-status" role="status"></p>
+    </form>
+  </section>
 
   <!-- ---- Sana Özel ---- -->
   <section id="panel-foryou" class="tab-panel" role="tabpanel" aria-labelledby="tab-foryou">
