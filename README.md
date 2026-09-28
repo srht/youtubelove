@@ -6,32 +6,46 @@ Ziyaretçiden hiçbir API anahtarı istenmez.
 
 ## Nasıl çalışıyor?
 
+Sitede iki öneri yolu var:
+
+**1. Kişisel video önerileri (Beni tanı → Sana Özel)**
+
 ```
-Tarayıcı ──POST /api/suggest──▶ Cloudflare Worker
-                                   └─ Workers AI (anahtar yok) ya da Claude (isteğe bağlı)
-                                        → YouTube'da aratılacak arama başlıkları (JSON)
+Beni tanı:  dil seçimi → 3-4 tur video ızgarası (sessiz önizleme / izleme)
+               │  olaylar: impression, click, hover, oynatma, 5 sn heartbeat, seek, çıkış
+               ▼
+POST /api/events ──▶ video başına sinyal (izleme süresi, bitirme, ileri sarma…)
+               ▼
+Profil: eksen başına Beta(α, β) + dil ağırlıkları + bge-m3 profil vektörü
+               ▼
+POST /api/recommend ──▶ profil benzerliği × kalite skoru → dil filtresi → mood (oturum) → %15 keşif
+```
+
+- Onboarding kartları sunucuda seçilir: ilk tur geniş kapsam, sonraki turlar **Thompson sampling**
+  ile en belirsiz eksenleri (konu, ton, derinlik, biçim, süre) sınar.
+- Kullanıcıdan seçim istenmez; neye ne kadar baktığından öğrenilir (örtük sinyaller).
+- Videolar elle gözden geçirilmiş bir **probe havuzundan** gelir (aşağıya bak).
+
+**2. YouTube arama başlıkları (Hızlı Seçim, Test, Kategoriler, Dizi & Film)**
+
+```
+Tarayıcı ──POST /api/suggest──▶ Workers AI (anahtarsız) ya da Claude
+                                  → kullanıcının dillerinde, o dilin kendi aramaları (JSON)
 Tarayıcı ── başlığa tıklama ──▶ youtube.com/results?search_query=… (izlenmeye göre sıralı)
 ```
 
-1. Site, seçimlerini (ruh hali, hedef, kategori, dizi filtreleri, test cevapları), süre tercihini
-   ve hafızandaki izlediğin/kaydettiğin başlıkları kısa bir metne çevirip `/api/suggest`'e gönderir.
-2. `worker/suggest.js` bu metni yapay zekâya verir ve JSON öneri listesi alır.
-   Daha önce izlediğin ve yakın zamanda önerilenler "tekrar önerme" listesiyle gönderilir.
-3. Öneriler **arama başlıkları** listesi olarak gösterilir (ör. "kaygılıyım" seçince
-   "4-7-8 nefes egzersizi rehberli", "yağmur sesi 1 saat" gibi). Bir başlığa tıklayınca YouTube'un
-   arama sonuç sayfası izlenmeye göre sıralı açılır; ne izleyeceğini orada sen seçersin.
+Seçimler (ruh hali, hedef, kategori, dizi filtreleri, test cevapları) ve süre tercihi yapay
+zekâya bağlam olarak gider; yabancı dildeki başlıkların yanında Türkçe anlamı ve dil rozeti görünür.
 
 ## Özellikler
 
-- **Sana Özel**: hafızana göre öneriler; **🎲 Şansımı dene** ile tek bir rastgele öneri.
-  "Site her açıldığında rastgele öneriyle başlasın" seçeneği ve `#lucky` adresi.
-- **Hızlı Seçim**, **Kısa Test**, **Kategoriler**: seçimlerin yapay zekâya bağlam olarak gider.
-- **Dizi & Film**: dönem, tür, ruh hali, köken, tür (dizi/film), yoğunluk filtreleri; rastgele dizi.
-  Kendi dizini/filmini formla ekleyebilirsin (YouTube başlık tamamlama ile).
-- **Kütüphanem**: izlediklerin, kaydettiklerin, "bunlara benzer ne var?" ve kategorilere ayrılmış
-  öneri geçmişi.
-- Açık/koyu/sistem teması, oturum zamanlayıcısı, YouTube'u sakinleştirme ipuçları.
-- Hafıza, kütüphane ve tercihler yalnızca tarayıcında (`localStorage`) tutulur.
+- **Beni tanı**: dil tercihi ("rahat anlıyorum" / "altyazıyla izleyebilirim" / anlamıyorum;
+  tarayıcı dilinden doldurulur), ardından sessiz önizlemeli video turları.
+- **Sana Özel**: kişisel video önerileri ("neden bu video?" gerekçesi, keşif işareti) ve yapay zekâ
+  arama başlıkları; **🎲 Şansımı dene**, `#lucky` adresi.
+- **Hızlı Seçim**, **Kısa Test**, **Kategoriler**: seçimlerin yapay zekâya bağlam olarak gider;
+  Hızlı Seçim'deki ruh hali/hedef ve menüdeki süre, video önerilerine oturum filtresi olarak uygulanır.
+- **Dizi & Film**, **Kütüphanem**, açık/koyu tema, zamanlayıcı, ipuçları.
 
 ## Kurulum (Cloudflare Workers)
 
@@ -115,13 +129,22 @@ worker/index.js               /api yönlendiricisi + haftalık bakım
 worker/suggest.js             /api/suggest — arama başlığı önerileri
 worker/routes/profile.js      /api/profile — dil tercihleri, olay takibi ayarı
 worker/routes/adminProbe.js   /api/admin/probe/* — havuz içe aktarma, skor, istatistik
-worker/lib/                   youtube, claude (Anthropic SDK), languages, axes, quality,
-                              probeLabel, probeStore, nativeQueries, migrate, user, http
+worker/routes/onboarding.js   /api/onboarding/{next,reset} — Thompson sampling ile tur kartları
+worker/routes/events.js       /api/events — toplu olay kaydı → sinyal → profil
+worker/routes/recommend.js    /api/recommend — kişisel video önerileri
+worker/lib/                   youtube, claude (Anthropic SDK), languages, langFilter, axes, quality,
+                              probeLabel, probeStore, nativeQueries, bandit, beliefs,
+                              onboardingPicker, signals, profileUpdate, embeddings, recommend,
+                              mood, translate, migrate, user, http
 scripts/probe/                collect / review / apply
 test/                         vitest (@cloudflare/vitest-pool-workers)
 public/index.html             tek sayfa, yan menülü arayüz
 public/assets/js/app.js       arayüz, bölümler, kartlar
-public/assets/js/onboarding.js "Beni tanı" akışı
+public/assets/js/onboarding.js "Beni tanı" akışı (dil + turlar)
+public/assets/js/recommendations.js "Sana Özel" video önerileri
+public/assets/js/videoCards.js  video kartı, sessiz önizleme, impression/hover
+public/assets/js/player.js    YouTube IFrame API: önizleme, izleme penceresi, oynatma olayları
+public/assets/js/events.js    olay kuyruğu → /api/events (toplu, sendBeacon)
 public/assets/js/profileApi.js /api/profile istemcisi
 public/assets/js/aiPrompt.js  ortak öneri istemi ve ayrıştırma (sunucu + tarayıcı)
 public/assets/js/…            diğer arayüz modülleri (kütüphane, hafıza, geçmiş, YouTube bağlantıları)
@@ -129,6 +152,10 @@ public/assets/js/…            diğer arayüz modülleri (kütüphane, hafıza,
 
 ## Gizlilik ve not
 
-Öneri almak için seçimlerin ve izlediğin/kaydettiğin başlıklar yapay zekâ servisine gönderilir;
-bunun dışında hiçbir veri sunucuda saklanmaz. Site tıbbi tavsiye vermez; ciddi bir sıkıntı
-yaşıyorsan bir uzmana başvur.
+- Kimlik: tarayıcıdaki anonim `yl_uid` çerezi. E-posta, ad gibi bilgi istenmez ve saklanmaz.
+- "Beni tanı" ve "Sana Özel" video kartlarında hangi videoyu gördüğün, önizlediğin ve ne kadar
+  izlediğin sunucuda saklanır ve yalnızca önerileri kişiselleştirmek için kullanılır.
+  **Beni tanı → "İzleme davranışımdan öğrensin"** kutusunu kapatırsan hiçbir olay kaydedilmez.
+- Arama başlığı önerileri için seçimlerin ve kütüphanendeki başlıklar yapay zekâ servisine gönderilir.
+- Kütüphane, hafıza ve arayüz tercihleri yalnızca tarayıcında (`localStorage`) durur.
+- Site tıbbi tavsiye vermez; ciddi bir sıkıntı yaşıyorsan bir uzmana başvur.

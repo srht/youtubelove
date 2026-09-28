@@ -6,6 +6,7 @@
 import { el } from "./dom.js";
 import { LANGUAGES } from "./languageList.js";
 import { initOnboarding, maybeStartOnboarding } from "./onboarding.js";
+import { initRecommendations, loadRecommendations } from "./recommendations.js";
 import { CATEGORIES, MOODS, GOALS, DURATIONS, ENERGY_LEVELS } from "./data.js";
 import {
   SHOW_ERAS, SHOW_GENRES, SHOW_MOODS, SHOW_ORIGINS, SHOW_TYPES, SHOW_INTENSITIES,
@@ -514,7 +515,10 @@ function switchTab(tabId, options = {}) {
   });
 
   if (tabId === "library") renderLibraryTab();
-  if (tabId === "foryou") renderMemoryStatus();
+  if (tabId === "foryou") {
+    renderMemoryStatus();
+    loadRecommendations();
+  }
 
   if (options.updateHash !== false && window.location.hash !== `#${tabId}`) {
     history.replaceState(null, "", `#${tabId}`);
@@ -1337,6 +1341,10 @@ function init() {
   initLibraryTab();
   initSettingsTab();
   initOnboarding({ switchTab });
+  // Mood katmanı: Hızlı Seçim'deki ruh hali/hedef ve menüdeki süre, önerilere oturum filtresi olarak gider
+  initRecommendations({
+    getSession: () => ({ mood: state.quick.mood, goal: state.quick.goal, duration: state.intentDuration }),
+  });
   updateLibraryCount();
 
   const previousProfile = getQuizProfile();

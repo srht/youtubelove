@@ -4,8 +4,8 @@
 
 import { el } from "./dom.js";
 import { getProfile, saveLanguages, setTracking } from "./profileApi.js";
-import { track, setTrackingEnabled } from "./events.js";
-import { startPreview, openWatchDialog } from "./player.js";
+import { setTrackingEnabled } from "./events.js";
+import { renderVideoCard, observeImpressions, stopPreview } from "./videoCards.js";
 
 const LEVEL_OPTIONS = [
   { id: "fluent", label: "Rahat anlıyorum" },
@@ -122,138 +122,12 @@ async function submitLanguages(event) {
 // Adım 2: video turları
 // ---------------------------------------------------------------------------
 
-const HOVER_PREVIEW_DELAY_MS = 350;
-const IMPRESSION_MIN_MS = 1000;
-const round = { number: 0, total: 4, cards: [], preview: null, observer: null };
-const finePointer = () => window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-
-function formatDuration(seconds) {
-  if (!seconds) return "";
-  const m = Math.floor(seconds / 60);
-  const h = Math.floor(m / 60);
-  return h ? `${h} sa ${m % 60} dk` : `${m} dk`;
-}
+const round = { number: 0, total: 4, cards: [], observer: null };
 
 function showStep(step) {
   document.getElementById("onbLangForm").hidden = step !== "languages";
   document.getElementById("onbRounds").hidden = step !== "rounds";
   document.getElementById("onbDone").hidden = step !== "done";
-}
-
-/** Önizlemeyi durdurur. Oynatıcı hazırsa senkron çalışır (sekme kapanırken çıkış anı kaybolmasın). */
-function stopPreview(reason) {
-  const current = round.preview;
-  round.preview = null;
-  if (!current) return;
-  current.card.classList.remove("is-previewing");
-  if (current.resolved) current.resolved.stop(reason);
-  else current.handle.then((h) => h?.stop(reason)).catch(() => {});
-}
-
-function playPreview(cardEl, card, position) {
-  if (round.preview?.card === cardEl) return;
-  stopPreview("switch");
-  cardEl.classList.add("is-previewing");
-  const meta = { surface: "onboarding", round: round.number, position };
-  const handle = startPreview(cardEl.querySelector(".onb-thumb"), { videoId: card.videoId, start: card.previewStart, meta });
-  const entry = { card: cardEl, handle, resolved: null };
-  round.preview = entry;
-  handle.then((h) => {
-    entry.resolved = h;
-  });
-  handle.catch(() => {
-    cardEl.classList.remove("is-previewing");
-    if (round.preview?.card === cardEl) round.preview = null;
-  });
-}
-
-function renderCard(card, position) {
-  const meta = { videoId: card.videoId, surface: "onboarding", round: round.number, position };
-  const foreign = Boolean(card.translatedTitle);
-  const thumb = el("div", { class: "onb-thumb" }, [
-    el("img", { src: card.thumbnail, alt: "", loading: "lazy", decoding: "async" }),
-    el("span", { class: "onb-duration", text: formatDuration(card.durationSeconds) }),
-    card.lang !== "tr" ? el("span", { class: "lang-badge onb-lang", title: card.langName, text: `🌐 ${card.lang === "zxx" ? "♪" : card.lang.toUpperCase()}` }) : null,
-    card.hasCaptions ? el("span", { class: "onb-cc", title: "Altyazı var", text: "CC" }) : null,
-  ]);
-  const watchBtn = el("button", {
-    class: "btn btn-secondary btn-small onb-watch",
-    type: "button",
-    text: "▶ İzle",
-    onclick: async (event) => {
-      event.stopPropagation();
-      track("click", { ...meta, target: "watch" });
-      await stopPreview("watch");
-      openWatchDialog({ videoId: card.videoId, title: card.translatedTitle ?? card.title, meta: { surface: "onboarding", round: round.number, position } })
-        .catch((err) => setRoundStatus(`⚠️ ${err.message}`, "error"));
-    },
-  });
-  const article = el("article", { class: "onb-card", tabindex: "0", "data-video-id": card.videoId, "aria-label": card.translatedTitle ?? card.title }, [
-    thumb,
-    el("div", { class: "onb-body" }, [
-      el("h4", { class: "onb-title", text: card.translatedTitle ?? card.title }),
-      foreign ? el("p", { class: "onb-original muted", lang: card.lang, text: card.title }) : null,
-      el("p", { class: "onb-channel muted", text: card.channel }),
-      watchBtn,
-    ]),
-  ]);
-
-  // Masaüstü: üzerine gelince (kısa gecikmeyle) önizleme; üzerinde kalma süresi ölçülür
-  let hoverStart = 0;
-  let hoverTimer = null;
-  article.addEventListener("mouseenter", () => {
-    if (!finePointer()) return;
-    hoverStart = performance.now();
-    hoverTimer = setTimeout(() => playPreview(article, card, position), HOVER_PREVIEW_DELAY_MS);
-  });
-  article.addEventListener("mouseleave", () => {
-    if (!finePointer()) return;
-    clearTimeout(hoverTimer);
-    const ms = Math.round(performance.now() - hoverStart);
-    if (ms > 150) track("hover", { ...meta, ms });
-    if (round.preview?.card === article) stopPreview("leave");
-  });
-  // Dokunmatik ve klavye: dokun/Enter önizlemeyi açar-kapatır
-  const toggle = () => {
-    if (round.preview?.card === article) stopPreview("tap");
-    else {
-      track("click", { ...meta, target: "preview" });
-      playPreview(article, card, position);
-    }
-  };
-  thumb.addEventListener("click", () => {
-    if (!finePointer()) toggle();
-    else track("click", { ...meta, target: "thumb" });
-  });
-  article.addEventListener("keydown", (event) => {
-    if (event.target === article && (event.key === "Enter" || event.key === " ")) {
-      event.preventDefault();
-      toggle();
-    }
-  });
-  return article;
-}
-
-/** Kart en az yarısı 1 sn görünür kaldıysa "impression". */
-function observeImpressions(grid) {
-  round.observer?.disconnect();
-  const timers = new Map();
-  const seen = new Set();
-  round.observer = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      const id = entry.target.dataset.videoId;
-      if (seen.has(id)) continue;
-      if (entry.isIntersecting) {
-        timers.set(id, setTimeout(() => {
-          seen.add(id);
-          track("impression", { videoId: id, surface: "onboarding", round: round.number, position: Number(entry.target.dataset.position) });
-        }, IMPRESSION_MIN_MS));
-      } else {
-        clearTimeout(timers.get(id));
-      }
-    }
-  }, { threshold: 0.5 });
-  grid.querySelectorAll(".onb-card").forEach((c) => round.observer.observe(c));
 }
 
 function setRoundStatus(text, kind = "") {
@@ -282,16 +156,20 @@ function renderRound(data) {
   const grid = document.getElementById("onbGrid");
   grid.innerHTML = "";
   data.cards.forEach((card, i) => {
-    const node = renderCard(card, i);
-    node.dataset.position = String(i);
-    grid.appendChild(node);
+    grid.appendChild(renderVideoCard(card, {
+      surface: "onboarding",
+      round: data.round,
+      position: i,
+      onError: (message) => setRoundStatus(`⚠️ ${message}`, "error"),
+    }));
   });
   document.getElementById("onbNext").textContent = data.round >= (data.minRounds ?? 3) ? "Devam →" : "Sonraki tur →";
-  observeImpressions(grid);
+  round.observer?.disconnect();
+  round.observer = observeImpressions(grid, { surface: "onboarding", round: data.round });
 }
 
 async function nextRound() {
-  await stopPreview("next");
+  stopPreview("next");
   const button = document.getElementById("onbNext");
   button.disabled = true;
   setRoundStatus("Yeni videolar seçiliyor…");
@@ -346,14 +224,6 @@ export function initOnboarding({ switchTab }) {
   document.getElementById("onbNext").addEventListener("click", nextRound);
   document.getElementById("onbRestart").addEventListener("click", restartRounds);
   document.getElementById("onbAgain").addEventListener("click", restartRounds);
-  // Sekme gizlenince önizleme dursun (çıkış anı kaydedilsin), bölümden çıkınca da
-  // capture: olay kuyruğunun çıkış gönderiminden (events.js) ÖNCE çalışsın
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden" && round.preview) stopPreview("hidden");
-  }, { capture: true });
-  document.addEventListener("click", (event) => {
-    if (event.target.closest(".menu-item") && round.preview) stopPreview("navigate");
-  });
   if (window.location.hash === "#onboarding") renderPanel();
 }
 

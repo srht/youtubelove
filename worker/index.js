@@ -6,6 +6,7 @@ import { getProfile, putLanguages, putTracking } from "./routes/profile.js";
 import { postImport, postRescore, getStats } from "./routes/adminProbe.js";
 import { postNext, postReset } from "./routes/onboarding.js";
 import { postEvents } from "./routes/events.js";
+import { postRecommend } from "./routes/recommend.js";
 import { ensureMigrated } from "./lib/migrate.js";
 import { refreshStats, recomputeScores } from "./lib/probeStore.js";
 import { embedMissing } from "./lib/embeddings.js";
@@ -19,6 +20,7 @@ export const ROUTES = {
   "/api/profile/languages": { db: true, PUT: putLanguages },
   "/api/profile/tracking": { db: true, PUT: putTracking },
   "/api/events": { db: true, POST: postEvents },
+  "/api/recommend": { db: true, POST: postRecommend },
   "/api/onboarding/next": { db: true, POST: postNext },
   "/api/onboarding/reset": { db: true, POST: postReset },
   "/api/admin/probe/import": { db: true, POST: postImport },

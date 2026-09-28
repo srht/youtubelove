@@ -155,6 +155,22 @@
       <p class="muted">Yapay zekâ, seçimlerinden ve izlediklerinden öğrendiklerine göre her seferinde yeni öneriler üretir.</p>
     </div>
 
+    <section id="recoSection" class="reco-section" aria-labelledby="recoTitle" hidden>
+      <div class="onb-round-head">
+        <h3 id="recoTitle">🎯 Senin için videolar</h3>
+        <button type="button" id="recoRefresh" class="btn btn-secondary btn-small">↻ Yenile</button>
+      </div>
+      <p id="recoContext" class="muted reco-context" hidden></p>
+      <div id="recoEmpty" class="reco-empty" hidden>
+        <p id="recoEmptyText" class="muted"></p>
+        <button type="button" class="btn btn-primary btn-small" data-goto="onboarding">🧭 Beni tanı</button>
+      </div>
+      <div id="recoGrid" class="onb-grid" aria-live="polite"></div>
+      <p id="recoStatus" class="form-status" role="status"></p>
+    </section>
+
+    <h3 class="reco-subhead">🔎 YouTube'da aratabileceğin başlıklar</h3>
+
     <div class="foryou-bar">
       <div class="foryou-info">
         <p id="memorySummary" class="memory-summary"></p>
@@ -490,7 +506,7 @@
 <footer class="site-footer">
   <div class="wrap">
     <p>Bu site tıbbi tavsiye vermez; kaygı, uyku veya ruh hali ile ilgili ciddi zorluklar yaşıyorsan bir uzmana danışmanı öneririz.</p>
-    <p class="muted">Hesap gerekmez. Öneri isterken yaptığın seçimler (ruh hali, kategori, izlediğin yapımların adları) öneri üretmek için yapay zekâya gönderilir; sitenin kendisi bunları saklamaz. Kütüphanen ve tercihlerin yalnızca tarayıcında durur.</p>
+    <p class="muted">Hesap gerekmez; seni tarayıcıdaki anonim bir çerezle tanırız. Arama önerisi isterken yaptığın seçimler (ruh hali, kategori, izlediğin yapımların adları) yapay zekâya gönderilir. "Beni tanı" ve "Sana Özel" video kartlarında neyi önizleyip ne kadar izlediğin, önerileri kişiselleştirmek için sunucuda saklanır; bunu "Beni tanı" bölümünden kapatabilirsin. Kütüphanen ve arayüz tercihlerin yalnızca tarayıcında durur.</p>
   </div>
 </footer>
 
